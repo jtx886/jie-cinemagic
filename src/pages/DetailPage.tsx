@@ -48,6 +48,7 @@ export default function DetailPage() {
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [forceIframe, setForceIframe] = useState(false);
   const [activeParser, setActiveParser] = useState(0);
+  const [playNotice, setPlayNotice] = useState('');
 
   const cachedSourcesRef = useRef<Record<string, PlaySource[]>>({});
 
