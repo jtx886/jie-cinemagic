@@ -253,7 +253,7 @@ export default function DetailPage() {
               {currentUrl && (
                 <div className="glass rounded-2xl p-3">
                   <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-                    <span className="text-xs text-muted-foreground shrink-0 py-1">解析：</span>
+                    <span className="text-xs text-muted-foreground shrink-0 py-1">播放线路：</span>
                     {PARSER_LINES.map((line, i) => (
                       <button
                         key={line.name}
