@@ -23,7 +23,7 @@ export default function Index() {
               免费在线观看 · 高清4K · 无广告 · 电影 · 电视剧 · 动漫
             </p>
             <div className="mt-3 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-              <span>作者：杰同学🐾</span>
+              <span>APP开发者：杰同学🐾</span>
               <span>桂ICP备202602110908号</span>
             </div>
           </div>
@@ -63,7 +63,8 @@ export default function Index() {
         </main>
 
         <footer className="glass-strong py-6 text-center text-xs text-muted-foreground">
-          <p>JIE影视4K © 2026 杰同学🐾</p>
+          <p>JIE影视4K © 2026</p>
+          <p className="mt-1">APP开发者：杰同学🐾</p>
           <p className="mt-1">备案号：桂ICP备202602110908号</p>
           <p className="mt-1">本站资源均来自互联网，仅供学习交流使用</p>
         </footer>
