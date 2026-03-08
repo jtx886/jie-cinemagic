@@ -18,6 +18,14 @@ import VideoCard from '@/components/VideoCard';
 import HlsPlayer from '@/components/HlsPlayer';
 import { Loader2, Calendar, MapPin, Star, Clapperboard, Play } from 'lucide-react';
 
+const PARSER_LINES = [
+  { name: '解析1', base: 'https://jx.xmflv.com/?url=' },
+  { name: '解析2', base: 'https://jx.bozrc.com:4433/player/?url=' },
+  { name: '解析3', base: 'https://www.yemu.xyz/?url=' },
+];
+
+const isM3u8Url = (url: string) => url.includes('.m3u8');
+
 export default function DetailPage() {
   const { type, id } = useParams<{ type: string; id: string }>();
   const mediaType = type as 'movie' | 'tv';
@@ -37,8 +45,10 @@ export default function DetailPage() {
   const [vodLoading, setVodLoading] = useState(false);
   const [vodError, setVodError] = useState('');
   const [autoPlaySignal, setAutoPlaySignal] = useState(0);
-
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [forceIframe, setForceIframe] = useState(false);
+  const [activeParser, setActiveParser] = useState(0);
+
   const cachedSourcesRef = useRef<Record<string, PlaySource[]>>({});
 
   useEffect(() => {
@@ -48,6 +58,7 @@ export default function DetailPage() {
     setVodSources([]);
     setVodError('');
     setSelectedSeason(1);
+    setForceIframe(false);
 
     if (mediaType === 'movie') {
       Promise.all([tmdb.movieDetail(mediaId), tmdb.movieSimilar(mediaId)])
@@ -119,7 +130,6 @@ export default function DetailPage() {
     }
   };
 
-  // Auto-search on load
   useEffect(() => {
     if (title && searchCandidates.length > 0) {
       void searchPlayableSources();
@@ -129,6 +139,7 @@ export default function DetailPage() {
   const handlePlay = () => {
     setPlaying(true);
     setAutoPlaySignal((n) => n + 1);
+    setForceIframe(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (!currentUrl && !vodLoading) {
       searchPlayableSources();
@@ -139,6 +150,7 @@ export default function DetailPage() {
     setActiveSource(sourceIdx);
     setActiveEp(epIdx);
     setCurrentUrl(vodSources[sourceIdx]?.urls[epIdx]?.url || '');
+    setForceIframe(false);
     setAutoPlaySignal((n) => n + 1);
   };
 
@@ -146,6 +158,9 @@ export default function DetailPage() {
     setSelectedSeason(seasonNum);
     tmdb.tvSeasonDetail(mediaId, seasonNum).then((s) => setEpisodes(s.episodes || []));
   };
+
+  const iframeUrl = currentUrl ? `${PARSER_LINES[activeParser].base}${encodeURIComponent(currentUrl)}` : '';
+  const shouldUseIframe = forceIframe || (!!currentUrl && !isM3u8Url(currentUrl));
 
   if (loading) {
     return (
@@ -184,7 +199,6 @@ export default function DetailPage() {
       <div className="relative z-10">
         <Header />
         <main className="container mx-auto px-4 pb-20">
-          {/* Player area */}
           {playing && (
             <div className="mt-4 space-y-3">
               {vodLoading ? (
@@ -201,14 +215,50 @@ export default function DetailPage() {
                 </div>
               ) : currentUrl ? (
                 <div className="glass rounded-2xl overflow-hidden">
-                  <HlsPlayer url={currentUrl} autoPlaySignal={autoPlaySignal} onError={() => setVodError('播放失败，请切换线路')} />
+                  {shouldUseIframe ? (
+                    <div className="aspect-video bg-background">
+                      <iframe
+                        src={iframeUrl}
+                        className="w-full h-full border-0"
+                        allowFullScreen
+                        allow="autoplay; encrypted-media; fullscreen"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  ) : (
+                    <HlsPlayer
+                      url={currentUrl}
+                      autoPlaySignal={autoPlaySignal}
+                      onError={() => {
+                        setForceIframe(true);
+                        setVodError('HLS线路播放失败，已切换为解析播放，请尝试切换解析线路');
+                      }}
+                    />
+                  )}
                 </div>
               ) : null}
 
-              {/* Source & Episode selector */}
+              {currentUrl && (
+                <div className="glass rounded-2xl p-3">
+                  <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                    <span className="text-xs text-muted-foreground shrink-0 py-1">解析：</span>
+                    {PARSER_LINES.map((line, i) => (
+                      <button
+                        key={line.name}
+                        onClick={() => setActiveParser(i)}
+                        className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                          i === activeParser ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+                        }`}
+                      >
+                        {line.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {vodSources.length > 0 && (
                 <div className="glass rounded-2xl p-3 space-y-3">
-                  {/* Source lines */}
                   {vodSources.length > 1 && (
                     <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
                       <span className="text-xs text-muted-foreground shrink-0 py-1">线路：</span>
@@ -226,7 +276,6 @@ export default function DetailPage() {
                     </div>
                   )}
 
-                  {/* Episode grid */}
                   {vodSources[activeSource]?.urls.length > 1 && (
                     <div>
                       <p className="text-xs text-muted-foreground mb-2">选集：</p>
@@ -250,24 +299,45 @@ export default function DetailPage() {
             </div>
           )}
 
-          {/* Detail info */}
           <div className="mt-6 flex flex-col md:flex-row gap-6">
             <div className="shrink-0 self-start">
               <img
                 src={getImageUrl(detail.poster_path, 'w342')}
                 alt={title}
                 className="w-36 md:w-48 aspect-[2/3] object-cover rounded-xl glass"
-                onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                }}
               />
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-foreground">{title}</h1>
               <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
-                {genres && <span className="flex items-center gap-1"><Clapperboard className="w-3.5 h-3.5" /> {genres}</span>}
-                {year && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {year}</span>}
-                {detail.vote_average > 0 && <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5" /> {detail.vote_average.toFixed(1)}</span>}
-                {movie?.production_countries?.[0] && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {movie.production_countries[0].name}</span>}
-                {tv?.origin_country?.[0] && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {tv.origin_country[0]}</span>}
+                {genres && (
+                  <span className="flex items-center gap-1">
+                    <Clapperboard className="w-3.5 h-3.5" /> {genres}
+                  </span>
+                )}
+                {year && (
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" /> {year}
+                  </span>
+                )}
+                {detail.vote_average > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5" /> {detail.vote_average.toFixed(1)}
+                  </span>
+                )}
+                {movie?.production_countries?.[0] && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" /> {movie.production_countries[0].name}
+                  </span>
+                )}
+                {tv?.origin_country?.[0] && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" /> {tv.origin_country[0]}
+                  </span>
+                )}
               </div>
               {detail.overview && <p className="text-sm text-secondary-foreground/80 mt-4 leading-relaxed line-clamp-4">{detail.overview}</p>}
 
@@ -279,11 +349,14 @@ export default function DetailPage() {
                 <p className="mt-2 text-[11px] text-muted-foreground">✅ 已找到 {vodSources.reduce((a, s) => a + s.urls.length, 0)} 个播放资源</p>
               )}
 
-              {tv && <div className="mt-3 text-xs text-muted-foreground">共 {tv.number_of_seasons} 季 · {tv.number_of_episodes} 集</div>}
+              {tv && (
+                <div className="mt-3 text-xs text-muted-foreground">
+                  共 {tv.number_of_seasons} 季 · {tv.number_of_episodes} 集
+                </div>
+              )}
             </div>
           </div>
 
-          {/* TV seasons & episodes */}
           {mediaType === 'tv' && tv && (
             <div className="mt-8 space-y-4">
               {tv.seasons.filter((s) => s.season_number > 0).length > 1 && (
