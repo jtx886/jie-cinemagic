@@ -25,7 +25,16 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const target = url.searchParams.get("url");
+    let target = url.searchParams.get("url");
+
+    if (!target && req.method !== "GET") {
+      try {
+        const body = await req.json();
+        if (typeof body?.url === "string") target = body.url;
+      } catch {
+        // ignore invalid json
+      }
+    }
 
     if (!target || !/^https?:\/\//i.test(target)) {
       return new Response(JSON.stringify({ error: "invalid url" }), {
