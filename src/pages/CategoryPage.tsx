@@ -1,44 +1,64 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchVodList, CATEGORIES, type VodItem } from '@/lib/videoApi';
+import { tmdb, type TMDBItem } from '@/lib/tmdb';
 import Header from '@/components/Header';
 import NavBar from '@/components/NavBar';
 import VideoCard from '@/components/VideoCard';
 import { Loader2 } from 'lucide-react';
 
+const CATEGORY_MAP: Record<string, { label: string; icon: string; fetcher: (page: number) => Promise<{ results: TMDBItem[]; total_pages: number }> }> = {
+  movie: { label: '热门电影', icon: '🎬', fetcher: (p) => tmdb.moviesPopular(p) },
+  tv: { label: '热门剧集', icon: '📺', fetcher: (p) => tmdb.tvPopular(p) },
+  anime: { label: '日本动漫', icon: '🎌', fetcher: (p) => tmdb.anime(p) },
+  animation: { label: '动画精选', icon: '✨', fetcher: (p) => tmdb.dongman(p) },
+  toprated: { label: '高分电影', icon: '⭐', fetcher: (p) => tmdb.moviesTopRated(p) },
+};
+
 export default function CategoryPage() {
   const { id } = useParams();
-  const catId = Number(id);
-  const [items, setItems] = useState<VodItem[]>([]);
+  const cat = CATEGORY_MAP[id || ''];
+  const [items, setItems] = useState<TMDBItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const catInfo = Object.values(CATEGORIES).find((c) => c.id === catId);
-
   useEffect(() => {
+    if (!cat) return;
     setLoading(true);
     setPage(1);
-    fetchVodList({ t: catId, pg: 1 })
+    cat.fetcher(1)
       .then((res) => {
-        setItems(res.list || []);
-        setTotalPages(res.pagecount || 1);
+        setItems(res.results || []);
+        setTotalPages(Math.min(res.total_pages || 1, 50));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [catId]);
+  }, [id]);
 
   const loadMore = () => {
+    if (!cat) return;
     const next = page + 1;
     if (next > totalPages) return;
     setLoading(true);
-    fetchVodList({ t: catId, pg: next })
+    cat.fetcher(next)
       .then((res) => {
-        setItems((prev) => [...prev, ...(res.list || [])]);
+        setItems((prev) => [...prev, ...(res.results || [])]);
         setPage(next);
       })
       .finally(() => setLoading(false));
   };
+
+  if (!cat) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex justify-center py-32 text-muted-foreground">未知分类</div>
+      </div>
+    );
+  }
+
+  // Assign media_type for categories
+  const mediaType = id === 'movie' || id === 'toprated' ? 'movie' : 'tv';
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,8 +66,8 @@ export default function CategoryPage() {
       <main className="container mx-auto px-4 pb-20">
         <NavBar />
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-          {catInfo && <span>{catInfo.icon}</span>}
-          <span>{catInfo?.label || '分类'}</span>
+          <span>{cat.icon}</span>
+          <span>{cat.label}</span>
         </h2>
 
         {loading && items.length === 0 ? (
@@ -58,7 +78,7 @@ export default function CategoryPage() {
           <>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
               {items.map((item) => (
-                <VideoCard key={item.vod_id} item={item} />
+                <VideoCard key={item.id} item={{ ...item, media_type: item.media_type || mediaType }} />
               ))}
             </div>
             {page < totalPages && (

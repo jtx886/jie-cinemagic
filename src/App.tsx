@@ -20,7 +20,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<SearchPage />} />
-          <Route path="/detail/:id" element={<DetailPage />} />
+          <Route path="/detail/:type/:id" element={<DetailPage />} />
           <Route path="/category/:id" element={<CategoryPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

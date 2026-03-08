@@ -1,7 +1,7 @@
 import Header from '@/components/Header';
 import NavBar from '@/components/NavBar';
 import CategorySection from '@/components/CategorySection';
-import { CATEGORIES } from '@/lib/videoApi';
+import { tmdb } from '@/lib/tmdb';
 
 export default function Index() {
   return (
@@ -29,14 +29,36 @@ export default function Index() {
           </div>
 
           <div className="space-y-10">
-            {Object.values(CATEGORIES).map((cat) => (
-              <CategorySection
-                key={cat.id}
-                title={cat.label}
-                icon={cat.icon}
-                categoryId={cat.id}
-              />
-            ))}
+            <CategorySection
+              title="正在热映"
+              icon="🔥"
+              fetcher={() => tmdb.moviesNowPlaying()}
+            />
+            <CategorySection
+              title="热门电影"
+              icon="🎬"
+              fetcher={() => tmdb.moviesPopular()}
+            />
+            <CategorySection
+              title="热门剧集"
+              icon="📺"
+              fetcher={() => tmdb.tvPopular()}
+            />
+            <CategorySection
+              title="日本动漫"
+              icon="🎌"
+              fetcher={() => tmdb.anime()}
+            />
+            <CategorySection
+              title="动画精选"
+              icon="✨"
+              fetcher={() => tmdb.dongman()}
+            />
+            <CategorySection
+              title="高分电影"
+              icon="⭐"
+              fetcher={() => tmdb.moviesTopRated()}
+            />
           </div>
         </main>
 
