@@ -1,14 +1,8 @@
+import { supabase } from '@/integrations/supabase/client';
+
 const TMDB_API_KEY = 'cb44223c5dee5676ed3a839f42ed27e3';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
-
-const VOD_API = 'https://api.ffzyapi.com/api.php/provide/vod/';
-
-const CORS_PROXIES = [
-  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  (url: string) => `https://cors.isomorphic-git.org/${url}`,
-];
 
 export const getImageUrl = (path: string | null, size = 'w500') => {
   if (!path) return '/placeholder.svg';
@@ -20,11 +14,6 @@ export const getBackdropUrl = (path: string | null) => {
   return `${IMG_BASE}/w1280${path}`;
 };
 
-export const buildPlayableUrls = (streamUrl: string) => {
-  const base = streamUrl.trim();
-  if (!base) return [];
-  return Array.from(new Set([base, ...CORS_PROXIES.map((proxy) => proxy(base))]));
-};
 
 export interface TMDBItem {
   id: number;
@@ -130,37 +119,19 @@ interface VodResponse {
   list: VodItem[];
 }
 
-async function fetchWithTimeout(url: string, timeout = 8000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeout);
-  try {
-    return await fetch(url, { signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function fetchVodViaProxy(apiUrl: string): Promise<VodResponse | null> {
-  for (const buildProxyUrl of CORS_PROXIES) {
-    try {
-      const res = await fetchWithTimeout(buildProxyUrl(apiUrl));
-      if (!res.ok) continue;
-      const data = (await res.json()) as VodResponse;
-      if (data?.list) return data;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
 export async function searchVod(keyword: string): Promise<VodItem[]> {
   const safeKeyword = keyword.trim().slice(0, 80);
   if (!safeKeyword) return [];
 
-  const url = `${VOD_API}?ac=detail&wd=${encodeURIComponent(safeKeyword)}`;
-  const data = await fetchVodViaProxy(url);
-  return data?.list || [];
+  try {
+    const { data, error } = await supabase.functions.invoke('vod-search', {
+      body: { keyword: safeKeyword },
+    });
+    if (error) throw error;
+    return data?.list || [];
+  } catch {
+    return [];
+  }
 }
 
 export function buildVodQueryCandidates(title: string, year?: string) {
@@ -220,6 +191,13 @@ export const tmdb = {
   tvSeasonDetail: (tvId: number, seasonNumber: number) => tmdbFetch<{ episodes: TMDBEpisode[] }>(`/tv/${tvId}/season/${seasonNumber}`),
   movieSimilar: (id: number) => tmdbFetch<TMDBResponse<TMDBItem>>(`/movie/${id}/similar`),
   tvSimilar: (id: number) => tmdbFetch<TMDBResponse<TMDBItem>>(`/tv/${id}/similar`),
+  guoman: (page = 1) =>
+    tmdbFetch<TMDBResponse<TMDBItem>>('/discover/tv', {
+      page: String(page),
+      with_genres: '16',
+      with_original_language: 'zh',
+      sort_by: 'popularity.desc',
+    }),
 };
 
 export const getTitle = (item: TMDBItem) => item.title || item.name || '未知';
