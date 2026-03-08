@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Maximize, Minimize } from 'lucide-react';
 
 interface Props {
   url: string;
@@ -8,10 +8,34 @@ interface Props {
 }
 
 export default function HlsPlayer({ url, onError }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!document.fullscreenElement) {
+      container.requestFullscreen?.().catch(() => {
+        // Fallback: try video element directly (better mobile support)
+        videoRef.current?.requestFullscreen?.().catch(() => {});
+      });
+    } else {
+      document.exitFullscreen?.();
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -77,7 +101,12 @@ export default function HlsPlayer({ url, onError }: Props) {
   }, [url]);
 
   return (
-    <div className="relative aspect-video bg-background rounded-xl overflow-hidden">
+    <div
+      ref={containerRef}
+      className={`relative bg-background rounded-xl overflow-hidden group ${
+        isFullscreen ? 'fixed inset-0 z-[9999] rounded-none' : 'aspect-video'
+      }`}
+    >
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -89,13 +118,24 @@ export default function HlsPlayer({ url, onError }: Props) {
           <p className="text-muted-foreground text-sm">{error}</p>
         </div>
       ) : (
-        <video
-          ref={videoRef}
-          className="w-full h-full"
-          controls
-          playsInline
-          preload="auto"
-        />
+        <>
+          <video
+            ref={videoRef}
+            className="w-full h-full"
+            controls
+            playsInline
+            preload="auto"
+            style={{ WebkitMediaPlaybackRequiresUserAction: false } as React.CSSProperties}
+          />
+          {/* Fullscreen button overlay */}
+          <button
+            onClick={toggleFullscreen}
+            className="absolute top-3 right-3 z-20 p-2 rounded-lg bg-background/60 backdrop-blur text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background/80"
+            title={isFullscreen ? '退出全屏' : '全屏播放'}
+          >
+            {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+          </button>
+        </>
       )}
     </div>
   );
