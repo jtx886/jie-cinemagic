@@ -3,11 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import SearchPage from "./pages/SearchPage";
 import DetailPage from "./pages/DetailPage";
 import CategoryPage from "./pages/CategoryPage";
 import MyPage from "./pages/MyPage";
+import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,14 +20,17 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/detail/:type/:id" element={<DetailPage />} />
-          <Route path="/category/:id" element={<CategoryPage />} />
-          <Route path="/me" element={<MyPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/detail/:type/:id" element={<DetailPage />} />
+            <Route path="/category/:id" element={<CategoryPage />} />
+            <Route path="/me" element={<MyPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
