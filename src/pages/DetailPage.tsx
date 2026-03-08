@@ -1,28 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   tmdb,
   getImageUrl,
   getBackdropUrl,
+  searchVod,
+  parsePlayUrls,
+  buildVodQueryCandidates,
   type TMDBMovieDetail,
   type TMDBTVDetail,
   type TMDBEpisode,
   type TMDBItem,
+  type PlaySource,
 } from '@/lib/tmdb';
 import Header from '@/components/Header';
 import VideoCard from '@/components/VideoCard';
+import HlsPlayer from '@/components/HlsPlayer';
 import { Loader2, Calendar, MapPin, Star, Clapperboard, Play } from 'lucide-react';
-
-const PLAYER_APIS = [
-  { name: '线路1', base: 'https://jx.xmflv.com/?url=' },
-  { name: '线路2', base: 'https://jx.bozrc.com:4433/player/?url=' },
-  { name: '线路3', base: 'https://www.yemu.xyz/?url=' },
-];
-
-function buildDoubanUrl(title: string, type: 'movie' | 'tv') {
-  // Use a known video site URL pattern that the jx APIs can parse
-  return `https://v.qq.com/x/search/?q=${encodeURIComponent(title)}`;
-}
 
 export default function DetailPage() {
   const { type, id } = useParams<{ type: string; id: string }>();
@@ -36,12 +30,23 @@ export default function DetailPage() {
   const [loading, setLoading] = useState(true);
 
   const [playing, setPlaying] = useState(false);
-  const [activeApi, setActiveApi] = useState(0);
+  const [currentUrl, setCurrentUrl] = useState('');
+  const [vodSources, setVodSources] = useState<PlaySource[]>([]);
+  const [activeSource, setActiveSource] = useState(0);
+  const [activeEp, setActiveEp] = useState(0);
+  const [vodLoading, setVodLoading] = useState(false);
+  const [vodError, setVodError] = useState('');
+  const [autoPlaySignal, setAutoPlaySignal] = useState(0);
+
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const cachedSourcesRef = useRef<Record<string, PlaySource[]>>({});
 
   useEffect(() => {
     setLoading(true);
     setPlaying(false);
+    setCurrentUrl('');
+    setVodSources([]);
+    setVodError('');
     setSelectedSeason(1);
 
     if (mediaType === 'movie') {
@@ -70,16 +75,71 @@ export default function DetailPage() {
 
   const title = movie?.title || tv?.name || '';
   const year = (movie?.release_date || tv?.first_air_date || '').slice(0, 4);
+  const searchCandidates = useMemo(() => buildVodQueryCandidates(title, year), [title, year]);
+
+  const searchPlayableSources = async () => {
+    const cacheKey = `${mediaType}-${mediaId}`;
+    if (cachedSourcesRef.current[cacheKey]?.length) {
+      const cached = cachedSourcesRef.current[cacheKey];
+      setVodSources(cached);
+      setActiveSource(0);
+      setActiveEp(0);
+      setCurrentUrl(cached[0]?.urls[0]?.url || '');
+      return true;
+    }
+
+    setVodLoading(true);
+    setVodError('');
+
+    try {
+      for (const candidate of searchCandidates) {
+        const results = await searchVod(candidate);
+        if (!results.length) continue;
+
+        const strictMatch = results.find((r) => r.vod_name.includes(candidate) || candidate.includes(r.vod_name));
+        const match = strictMatch || results[0];
+        const sources = parsePlayUrls(match.vod_play_url, match.vod_play_from);
+
+        if (sources.length > 0 && sources[0]?.urls[0]?.url) {
+          cachedSourcesRef.current[cacheKey] = sources;
+          setVodSources(sources);
+          setActiveSource(0);
+          setActiveEp(0);
+          setCurrentUrl(sources[0].urls[0].url);
+          return true;
+        }
+      }
+      setVodError('未找到播放源，请换一部试试');
+      return false;
+    } catch {
+      setVodError('资源搜索失败，请稍后重试');
+      return false;
+    } finally {
+      setVodLoading(false);
+    }
+  };
+
+  // Auto-search on load
+  useEffect(() => {
+    if (title && searchCandidates.length > 0) {
+      void searchPlayableSources();
+    }
+  }, [title, searchCandidates.length]);
 
   const handlePlay = () => {
     setPlaying(true);
+    setAutoPlaySignal((n) => n + 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!currentUrl && !vodLoading) {
+      searchPlayableSources();
+    }
   };
 
-  const getIframeSrc = () => {
-    const api = PLAYER_APIS[activeApi];
-    const searchQuery = encodeURIComponent(title);
-    return `${api.base}https://v.qq.com/x/search/?q=${searchQuery}`;
+  const selectEpisode = (sourceIdx: number, epIdx: number) => {
+    setActiveSource(sourceIdx);
+    setActiveEp(epIdx);
+    setCurrentUrl(vodSources[sourceIdx]?.urls[epIdx]?.url || '');
+    setAutoPlaySignal((n) => n + 1);
   };
 
   const handleSeasonChange = (seasonNum: number) => {
@@ -124,83 +184,90 @@ export default function DetailPage() {
       <div className="relative z-10">
         <Header />
         <main className="container mx-auto px-4 pb-20">
+          {/* Player area */}
           {playing && (
             <div className="mt-4 space-y-3">
-              <div className="glass rounded-2xl overflow-hidden">
-                {/* Line selector */}
-                <div className="p-3 border-b border-border/50">
-                  <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-                    <span className="text-xs text-muted-foreground shrink-0 py-1">播放线路：</span>
-                    {PLAYER_APIS.map((api, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setActiveApi(i)}
-                        className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                          i === activeApi ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
-                        }`}
-                      >
-                        {api.name}
-                      </button>
-                    ))}
-                  </div>
+              {vodLoading ? (
+                <div className="aspect-video glass rounded-2xl flex flex-col items-center justify-center gap-3">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <p className="text-sm text-muted-foreground">正在搜索播放资源...</p>
                 </div>
-                {/* Iframe player */}
-                <div className="aspect-video">
-                  <iframe
-                    src={getIframeSrc()}
-                    className="w-full h-full border-0"
-                    allowFullScreen
-                    allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                    referrerPolicy="no-referrer"
-                  />
+              ) : vodError ? (
+                <div className="aspect-video glass rounded-2xl flex flex-col items-center justify-center gap-3">
+                  <p className="text-sm text-muted-foreground">{vodError}</p>
+                  <button onClick={() => searchPlayableSources()} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
+                    重新搜索
+                  </button>
                 </div>
-                <div className="px-3 py-2 text-[10px] text-muted-foreground text-center">
-                  如无法播放请切换线路 · 播放内容来自第三方
+              ) : currentUrl ? (
+                <div className="glass rounded-2xl overflow-hidden">
+                  <HlsPlayer url={currentUrl} autoPlaySignal={autoPlaySignal} onError={() => setVodError('播放失败，请切换线路')} />
                 </div>
-              </div>
+              ) : null}
+
+              {/* Source & Episode selector */}
+              {vodSources.length > 0 && (
+                <div className="glass rounded-2xl p-3 space-y-3">
+                  {/* Source lines */}
+                  {vodSources.length > 1 && (
+                    <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                      <span className="text-xs text-muted-foreground shrink-0 py-1">线路：</span>
+                      {vodSources.map((src, i) => (
+                        <button
+                          key={i}
+                          onClick={() => selectEpisode(i, 0)}
+                          className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                            i === activeSource ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+                          }`}
+                        >
+                          {src.name || `线路${i + 1}`}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Episode grid */}
+                  {vodSources[activeSource]?.urls.length > 1 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">选集：</p>
+                      <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-1.5 max-h-48 overflow-y-auto scrollbar-hide">
+                        {vodSources[activeSource].urls.map((ep, i) => (
+                          <button
+                            key={i}
+                            onClick={() => selectEpisode(activeSource, i)}
+                            className={`px-2 py-1.5 rounded-lg text-[11px] font-medium text-center transition-all ${
+                              i === activeEp ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+                            }`}
+                          >
+                            {ep.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
+          {/* Detail info */}
           <div className="mt-6 flex flex-col md:flex-row gap-6">
             <div className="shrink-0 self-start">
               <img
                 src={getImageUrl(detail.poster_path, 'w342')}
                 alt={title}
                 className="w-36 md:w-48 aspect-[2/3] object-cover rounded-xl glass"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder.svg';
-                }}
+                onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
               />
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-foreground">{title}</h1>
               <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
-                {genres && (
-                  <span className="flex items-center gap-1">
-                    <Clapperboard className="w-3.5 h-3.5" /> {genres}
-                  </span>
-                )}
-                {year && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" /> {year}
-                  </span>
-                )}
-                {detail.vote_average > 0 && (
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Star className="w-3.5 h-3.5" /> {detail.vote_average.toFixed(1)}
-                  </span>
-                )}
-                {movie?.production_countries?.[0] && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" /> {movie.production_countries[0].name}
-                  </span>
-                )}
-                {tv?.origin_country?.[0] && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" /> {tv.origin_country[0]}
-                  </span>
-                )}
+                {genres && <span className="flex items-center gap-1"><Clapperboard className="w-3.5 h-3.5" /> {genres}</span>}
+                {year && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {year}</span>}
+                {detail.vote_average > 0 && <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5" /> {detail.vote_average.toFixed(1)}</span>}
+                {movie?.production_countries?.[0] && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {movie.production_countries[0].name}</span>}
+                {tv?.origin_country?.[0] && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {tv.origin_country[0]}</span>}
               </div>
               {detail.overview && <p className="text-sm text-secondary-foreground/80 mt-4 leading-relaxed line-clamp-4">{detail.overview}</p>}
 
@@ -208,14 +275,15 @@ export default function DetailPage() {
                 <Play className="w-5 h-5" /> {playing ? '正在播放' : '立即播放'}
               </button>
 
-              {tv && (
-                <div className="mt-3 text-xs text-muted-foreground">
-                  共 {tv.number_of_seasons} 季 · {tv.number_of_episodes} 集
-                </div>
+              {vodSources.length > 0 && !playing && (
+                <p className="mt-2 text-[11px] text-muted-foreground">✅ 已找到 {vodSources.reduce((a, s) => a + s.urls.length, 0)} 个播放资源</p>
               )}
+
+              {tv && <div className="mt-3 text-xs text-muted-foreground">共 {tv.number_of_seasons} 季 · {tv.number_of_episodes} 集</div>}
             </div>
           </div>
 
+          {/* TV seasons & episodes */}
           {mediaType === 'tv' && tv && (
             <div className="mt-8 space-y-4">
               {tv.seasons.filter((s) => s.season_number > 0).length > 1 && (

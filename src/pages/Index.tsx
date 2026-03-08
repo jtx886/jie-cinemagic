@@ -50,6 +50,11 @@ export default function Index() {
               fetcher={() => tmdb.anime()}
             />
             <CategorySection
+              title="国漫精选"
+              icon="🐉"
+              fetcher={() => tmdb.guoman()}
+            />
+            <CategorySection
               title="动画精选"
               icon="✨"
               fetcher={() => tmdb.dongman()}
