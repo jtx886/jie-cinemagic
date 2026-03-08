@@ -1,19 +1,21 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
-import { AlertCircle, Loader2, Maximize, Minimize } from 'lucide-react';
+import { AlertCircle, Loader2, Maximize, Minimize, Volume2 } from 'lucide-react';
 
 interface Props {
   url: string;
+  autoPlaySignal?: number;
   onError?: () => void;
 }
 
-export default function HlsPlayer({ url, onError }: Props) {
+export default function HlsPlayer({ url, autoPlaySignal = 0, onError }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [muted, setMuted] = useState(true);
 
   const toggleFullscreen = useCallback(() => {
     const container = containerRef.current;
@@ -21,13 +23,22 @@ export default function HlsPlayer({ url, onError }: Props) {
 
     if (!document.fullscreenElement) {
       container.requestFullscreen?.().catch(() => {
-        // Fallback: try video element directly (better mobile support)
         videoRef.current?.requestFullscreen?.().catch(() => {});
       });
     } else {
       document.exitFullscreen?.();
     }
   }, []);
+
+  const tryAutoplay = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = muted;
+    video.playsInline = true;
+    video.play().catch(() => {
+      // ignore blocked autoplay; user can tap play button in controls
+    });
+  }, [muted]);
 
   useEffect(() => {
     const handleFsChange = () => {
@@ -49,15 +60,24 @@ export default function HlsPlayer({ url, onError }: Props) {
       hlsRef.current = null;
     }
 
+    video.muted = muted;
+    video.playsInline = true;
+    video.preload = 'auto';
+
     if (url.includes('.m3u8')) {
       if (Hls.isSupported()) {
-        const hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60 });
+        const hls = new Hls({
+          maxBufferLength: 20,
+          maxMaxBufferLength: 40,
+          fragLoadingTimeOut: 10000,
+          manifestLoadingTimeOut: 10000,
+        });
         hlsRef.current = hls;
         hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           setLoading(false);
-          video.play().catch(() => {});
+          if (autoPlaySignal > 0) tryAutoplay();
         });
         hls.on(Hls.Events.ERROR, (_, data) => {
           if (data.fatal) {
@@ -70,7 +90,7 @@ export default function HlsPlayer({ url, onError }: Props) {
         video.src = url;
         video.addEventListener('loadedmetadata', () => {
           setLoading(false);
-          video.play().catch(() => {});
+          if (autoPlaySignal > 0) tryAutoplay();
         });
         video.addEventListener('error', () => {
           setLoading(false);
@@ -79,17 +99,19 @@ export default function HlsPlayer({ url, onError }: Props) {
         });
       } else {
         setLoading(false);
-        setError('您的浏览器不支持播放此视频');
+        setError('您的浏览器不支持此视频格式');
       }
     } else {
       video.src = url;
-      video.addEventListener('loadeddata', () => setLoading(false));
+      video.addEventListener('loadeddata', () => {
+        setLoading(false);
+        if (autoPlaySignal > 0) tryAutoplay();
+      });
       video.addEventListener('error', () => {
         setLoading(false);
         setError('视频加载失败');
         onError?.();
       });
-      video.play().catch(() => {});
     }
 
     return () => {
@@ -98,7 +120,7 @@ export default function HlsPlayer({ url, onError }: Props) {
         hlsRef.current = null;
       }
     };
-  }, [url]);
+  }, [url, autoPlaySignal, tryAutoplay, muted, onError]);
 
   return (
     <div
@@ -119,22 +141,23 @@ export default function HlsPlayer({ url, onError }: Props) {
         </div>
       ) : (
         <>
-          <video
-            ref={videoRef}
-            className="w-full h-full"
-            controls
-            playsInline
-            preload="auto"
-            style={{ WebkitMediaPlaybackRequiresUserAction: false } as React.CSSProperties}
-          />
-          {/* Fullscreen button overlay */}
-          <button
-            onClick={toggleFullscreen}
-            className="absolute top-3 right-3 z-20 p-2 rounded-lg bg-background/60 backdrop-blur text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background/80"
-            title={isFullscreen ? '退出全屏' : '全屏播放'}
-          >
-            {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-          </button>
+          <video ref={videoRef} className="w-full h-full" controls playsInline preload="auto" muted={muted} />
+          <div className="absolute top-3 right-3 z-20 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => setMuted((m) => !m)}
+              className="p-2 rounded-lg bg-background/60 backdrop-blur text-foreground hover:bg-background/80"
+              title={muted ? '取消静音' : '静音'}
+            >
+              <Volume2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-lg bg-background/60 backdrop-blur text-foreground hover:bg-background/80"
+              title={isFullscreen ? '退出全屏' : '全屏播放'}
+            >
+              {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+            </button>
+          </div>
         </>
       )}
     </div>

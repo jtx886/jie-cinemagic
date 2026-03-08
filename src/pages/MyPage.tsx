@@ -15,7 +15,7 @@ export default function MyPage() {
               <User className="w-8 h-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">我的资料</h1>
+              <h1 className="text-xl font-bold text-foreground">我的</h1>
               <p className="text-sm text-muted-foreground">登录后可同步收藏、历史和偏好</p>
             </div>
           </div>

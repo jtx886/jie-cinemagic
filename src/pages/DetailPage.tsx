@@ -7,6 +7,7 @@ import {
   searchVod,
   parsePlayUrls,
   buildVodQueryCandidates,
+  buildPlayableUrls,
   type TMDBMovieDetail,
   type TMDBTVDetail,
   type TMDBEpisode,
@@ -30,12 +31,14 @@ export default function DetailPage() {
   const [loading, setLoading] = useState(true);
 
   const [playing, setPlaying] = useState(false);
-  const [playUrl, setPlayUrl] = useState('');
+  const [playUrls, setPlayUrls] = useState<string[]>([]);
+  const [playUrlIndex, setPlayUrlIndex] = useState(0);
   const [vodSources, setVodSources] = useState<PlaySource[]>([]);
   const [activeSource, setActiveSource] = useState(0);
   const [activeEp, setActiveEp] = useState(0);
   const [vodLoading, setVodLoading] = useState(false);
   const [vodError, setVodError] = useState('');
+  const [autoPlaySignal, setAutoPlaySignal] = useState(0);
 
   const [selectedSeason, setSelectedSeason] = useState(1);
   const cachedSourcesRef = useRef<Record<string, PlaySource[]>>({});
@@ -43,7 +46,8 @@ export default function DetailPage() {
   useEffect(() => {
     setLoading(true);
     setPlaying(false);
-    setPlayUrl('');
+    setPlayUrls([]);
+    setPlayUrlIndex(0);
     setVodSources([]);
     setVodError('');
     setSelectedSeason(1);
@@ -77,19 +81,27 @@ export default function DetailPage() {
 
   const searchCandidates = useMemo(() => buildVodQueryCandidates(title, year), [title, year]);
 
-  const searchPlayableSources = async () => {
+  const applyPlayableUrl = (rawUrl: string) => {
+    const urls = buildPlayableUrls(rawUrl);
+    setPlayUrls(urls);
+    setPlayUrlIndex(0);
+  };
+
+  const searchPlayableSources = async (silent = false) => {
     const cacheKey = `${mediaType}-${mediaId}`;
     if (cachedSourcesRef.current[cacheKey]?.length) {
       const cached = cachedSourcesRef.current[cacheKey];
       setVodSources(cached);
       setActiveSource(0);
       setActiveEp(0);
-      setPlayUrl(cached[0]?.urls[0]?.url || '');
+      applyPlayableUrl(cached[0]?.urls[0]?.url || '');
       return true;
     }
 
-    setVodLoading(true);
-    setVodError('');
+    if (!silent) {
+      setVodLoading(true);
+      setVodError('');
+    }
 
     try {
       for (const candidate of searchCandidates) {
@@ -105,34 +117,52 @@ export default function DetailPage() {
           setVodSources(sources);
           setActiveSource(0);
           setActiveEp(0);
-          setPlayUrl(sources[0].urls[0].url);
+          applyPlayableUrl(sources[0].urls[0].url);
           return true;
         }
       }
 
-      setVodError('未找到可用播放源，请换一部试试');
+      if (!silent) setVodError('未找到可用播放源，请换一部试试');
       return false;
     } catch {
-      setVodError('资源搜索失败，请稍后重试');
+      if (!silent) setVodError('资源搜索失败，请稍后重试');
       return false;
     } finally {
-      setVodLoading(false);
+      if (!silent) setVodLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (title && searchCandidates.length > 0) {
+      void searchPlayableSources(true);
+    }
+  }, [title, searchCandidates.length]);
 
   const handlePlay = async () => {
     if (!title) return;
     setPlaying(true);
+    setAutoPlaySignal((n) => n + 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    if (playUrl) return;
+    if (playUrls[playUrlIndex]) return;
     await searchPlayableSources();
   };
 
   const selectEpisode = (sourceIdx: number, epIdx: number) => {
     setActiveSource(sourceIdx);
     setActiveEp(epIdx);
-    setPlayUrl(vodSources[sourceIdx]?.urls[epIdx]?.url || '');
+    applyPlayableUrl(vodSources[sourceIdx]?.urls[epIdx]?.url || '');
+    setAutoPlaySignal((n) => n + 1);
+  };
+
+  const tryNextProxyUrl = () => {
+    const nextIdx = playUrlIndex + 1;
+    if (nextIdx < playUrls.length) {
+      setPlayUrlIndex(nextIdx);
+      setVodError('');
+      return;
+    }
+    setVodError('该线路不可用，请切换线路或选集');
   };
 
   const handleSeasonChange = (seasonNum: number) => {
@@ -163,6 +193,7 @@ export default function DetailPage() {
 
   const genres = detail.genres?.map((g) => g.name).join(' / ') || '';
   const backdrop = getBackdropUrl(detail.backdrop_path);
+  const currentPlayUrl = playUrls[playUrlIndex] || '';
 
   return (
     <div className="min-h-screen bg-background">
@@ -189,11 +220,11 @@ export default function DetailPage() {
               ) : vodError ? (
                 <div className="aspect-video glass rounded-2xl flex flex-col items-center justify-center gap-3">
                   <p className="text-sm text-muted-foreground">{vodError}</p>
-                  <button onClick={searchPlayableSources} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
+                  <button onClick={() => searchPlayableSources(false)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
                     重新搜索
                   </button>
                 </div>
-              ) : playUrl ? (
+              ) : currentPlayUrl ? (
                 <div className="glass rounded-2xl overflow-hidden">
                   {vodSources.length > 0 && (
                     <div className="p-3 border-b border-border/50">
@@ -231,7 +262,10 @@ export default function DetailPage() {
                       )}
                     </div>
                   )}
-                  <HlsPlayer url={playUrl} onError={() => setVodError('该线路播放失败，请切换线路')} />
+                  <HlsPlayer url={currentPlayUrl} autoPlaySignal={autoPlaySignal} onError={tryNextProxyUrl} />
+                  <div className="px-3 py-2 text-[10px] text-muted-foreground text-center">
+                    当前播放链路：{playUrlIndex + 1}/{playUrls.length}
+                  </div>
                 </div>
               ) : null}
             </div>

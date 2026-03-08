@@ -20,6 +20,12 @@ export const getBackdropUrl = (path: string | null) => {
   return `${IMG_BASE}/w1280${path}`;
 };
 
+export const buildPlayableUrls = (streamUrl: string) => {
+  const base = streamUrl.trim();
+  if (!base) return [];
+  return Array.from(new Set([base, ...CORS_PROXIES.map((proxy) => proxy(base))]));
+};
+
 export interface TMDBItem {
   id: number;
   title?: string;
