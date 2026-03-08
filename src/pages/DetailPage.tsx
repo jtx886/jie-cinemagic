@@ -4,7 +4,6 @@ import {
   tmdb,
   getImageUrl,
   getBackdropUrl,
-  getPlayerUrl,
   type TMDBMovieDetail,
   type TMDBTVDetail,
   type TMDBEpisode,
@@ -12,6 +11,7 @@ import {
 } from '@/lib/tmdb';
 import Header from '@/components/Header';
 import VideoCard from '@/components/VideoCard';
+import EmbedPlayer from '@/components/EmbedPlayer';
 import { Loader2, Calendar, MapPin, Star, Clapperboard, Play } from 'lucide-react';
 
 export default function DetailPage() {
@@ -27,12 +27,10 @@ export default function DetailPage() {
   const [playing, setPlaying] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEp, setSelectedEp] = useState(1);
-  const [playerUrl, setPlayerUrl] = useState('');
 
   useEffect(() => {
     setLoading(true);
     setPlaying(false);
-    setPlayerUrl('');
     setSelectedSeason(1);
     setSelectedEp(1);
 
@@ -56,7 +54,6 @@ export default function DetailPage() {
           setTv(detail);
           setMovie(null);
           setSimilar(sim.results?.slice(0, 6) || []);
-          // Load first season episodes
           if (detail.seasons?.length > 0) {
             const firstSeason = detail.seasons.find((s) => s.season_number > 0) || detail.seasons[0];
             setSelectedSeason(firstSeason.season_number);
@@ -70,10 +67,9 @@ export default function DetailPage() {
   }, [mediaType, mediaId]);
 
   const handlePlay = (season?: number, episode?: number) => {
-    const url = getPlayerUrl(mediaId, mediaType, season, episode);
-    setPlayerUrl(url);
-    setPlaying(true);
     if (episode) setSelectedEp(episode);
+    if (season) setSelectedSeason(season);
+    setPlaying(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -112,7 +108,6 @@ export default function DetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Backdrop */}
       {backdrop && (
         <div
           className="fixed inset-0 pointer-events-none opacity-20"
@@ -124,43 +119,36 @@ export default function DetailPage() {
           }}
         />
       )}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{ background: 'var(--gradient-hero)' }}
-      />
+      <div className="fixed inset-0 pointer-events-none" style={{ background: 'var(--gradient-hero)' }} />
 
       <div className="relative z-10">
         <Header />
         <main className="container mx-auto px-4 pb-20">
           {/* Player */}
-          {playing && playerUrl && (
-            <div className="mt-4 rounded-2xl overflow-hidden glass aspect-video">
-              <iframe
-                src={playerUrl}
-                className="w-full h-full"
-                allowFullScreen
-                allow="autoplay; fullscreen; encrypted-media"
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+          {playing && (
+            <div className="mt-4">
+              <EmbedPlayer
+                tmdbId={mediaId}
+                type={mediaType}
+                season={mediaType === 'tv' ? selectedSeason : undefined}
+                episode={mediaType === 'tv' ? selectedEp : undefined}
                 title={title}
               />
             </div>
           )}
 
-          {/* Info Section */}
+          {/* Info */}
           <div className="mt-6 flex flex-col md:flex-row gap-6">
             <div className="shrink-0 self-start">
               <img
                 src={getImageUrl(detail.poster_path, 'w342')}
                 alt={title}
                 className="w-36 md:w-48 aspect-[2/3] object-cover rounded-xl glass"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder.svg';
-                }}
+                onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
               />
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-foreground">{title}</h1>
-
               <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
                 {genres && (
                   <span className="flex items-center gap-1">
@@ -188,7 +176,6 @@ export default function DetailPage() {
                   </span>
                 )}
               </div>
-
               {detail.overview && (
                 <p className="text-sm text-secondary-foreground/80 mt-4 leading-relaxed line-clamp-4">
                   {detail.overview}
@@ -196,16 +183,15 @@ export default function DetailPage() {
               )}
 
               {/* Play button for movies */}
-              {mediaType === 'movie' && !playing && (
+              {mediaType === 'movie' && (
                 <button
                   onClick={() => handlePlay()}
                   className="mt-5 flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm glow hover:opacity-90 transition-all"
                 >
-                  <Play className="w-5 h-5" /> 立即播放
+                  <Play className="w-5 h-5" /> {playing ? '正在播放' : '立即播放'}
                 </button>
               )}
 
-              {/* TV info */}
               {tv && (
                 <div className="mt-3 text-xs text-muted-foreground">
                   共 {tv.number_of_seasons} 季 · {tv.number_of_episodes} 集
@@ -217,7 +203,6 @@ export default function DetailPage() {
           {/* TV Season & Episode selector */}
           {mediaType === 'tv' && tv && (
             <div className="mt-8 space-y-4">
-              {/* Season tabs */}
               {tv.seasons.filter((s) => s.season_number > 0).length > 1 && (
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                   {tv.seasons
@@ -238,7 +223,6 @@ export default function DetailPage() {
                 </div>
               )}
 
-              {/* Episodes */}
               <div className="glass rounded-2xl p-4">
                 <h3 className="text-sm font-medium mb-3 text-foreground">选集 - 点击播放</h3>
                 <div className="flex flex-wrap gap-2 max-h-60 overflow-y-auto scrollbar-hide">
@@ -262,7 +246,6 @@ export default function DetailPage() {
                 </div>
               </div>
 
-              {/* Play button if not playing yet */}
               {!playing && episodes.length > 0 && (
                 <button
                   onClick={() => handlePlay(selectedSeason, 1)}
@@ -280,10 +263,7 @@ export default function DetailPage() {
               <h3 className="text-lg font-bold mb-4">🎯 相关推荐</h3>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                 {similar.map((item) => (
-                  <VideoCard
-                    key={item.id}
-                    item={{ ...item, media_type: mediaType }}
-                  />
+                  <VideoCard key={item.id} item={{ ...item, media_type: mediaType }} />
                 ))}
               </div>
             </div>

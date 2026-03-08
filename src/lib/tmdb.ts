@@ -12,13 +12,45 @@ export const getBackdropUrl = (path: string | null) => {
   return `${IMG_BASE}/w1280${path}`;
 };
 
-// Embed player URL for actual video playback
-export const getPlayerUrl = (id: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
-  if (type === 'tv' && season && episode) {
-    return `https://vidsrc.xyz/embed/tv/${id}/${season}/${episode}`;
-  }
-  return `https://vidsrc.xyz/embed/${type}/${id}`;
-};
+// Multiple embed player sources for fallback
+export const PLAYER_SOURCES = [
+  {
+    name: '线路1',
+    getUrl: (id: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
+      if (type === 'tv' && season && episode) {
+        return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
+      }
+      return `https://vidsrc.to/embed/${type}/${id}`;
+    },
+  },
+  {
+    name: '线路2',
+    getUrl: (id: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
+      if (type === 'tv' && season && episode) {
+        return `https://vidsrc.xyz/embed/tv/${id}/${season}/${episode}`;
+      }
+      return `https://vidsrc.xyz/embed/${type}/${id}`;
+    },
+  },
+  {
+    name: '线路3',
+    getUrl: (id: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
+      if (type === 'tv' && season && episode) {
+        return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
+      }
+      return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
+    },
+  },
+  {
+    name: '线路4',
+    getUrl: (id: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
+      if (type === 'tv' && season && episode) {
+        return `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
+      }
+      return `https://www.2embed.cc/embed/${id}`;
+    },
+  },
+];
 
 export interface TMDBItem {
   id: number;
@@ -103,31 +135,19 @@ async function tmdbFetch<T>(endpoint: string, params: Record<string, string> = {
   return res.json();
 }
 
-// ---- Public API ----
-
 export const tmdb = {
-  // Trending
   trending: (page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/trending/all/week', { page: String(page) }),
-
-  // Movies
   moviesPopular: (page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/movie/popular', { page: String(page) }),
-
   moviesTopRated: (page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/movie/top_rated', { page: String(page) }),
-
   moviesNowPlaying: (page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/movie/now_playing', { page: String(page) }),
-
-  // TV Shows
   tvPopular: (page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/tv/popular', { page: String(page) }),
-
   tvTopRated: (page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/tv/top_rated', { page: String(page) }),
-
-  // Anime (Animation genre = 16, Japanese origin)
   anime: (page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/discover/tv', {
       page: String(page),
@@ -135,38 +155,26 @@ export const tmdb = {
       with_original_language: 'ja',
       sort_by: 'popularity.desc',
     }),
-
-  // Chinese animation
   dongman: (page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/discover/tv', {
       page: String(page),
       with_genres: '16',
       sort_by: 'popularity.desc',
     }),
-
-  // Search
   search: (query: string, page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/search/multi', { query, page: String(page) }),
-
-  // Details
   movieDetail: (id: number) =>
     tmdbFetch<TMDBMovieDetail>(`/movie/${id}`),
-
   tvDetail: (id: number) =>
     tmdbFetch<TMDBTVDetail>(`/tv/${id}`),
-
   tvSeasonDetail: (tvId: number, seasonNumber: number) =>
     tmdbFetch<{ episodes: TMDBEpisode[] }>(`/tv/${tvId}/season/${seasonNumber}`),
-
-  // Similar
   movieSimilar: (id: number) =>
     tmdbFetch<TMDBResponse<TMDBItem>>(`/movie/${id}/similar`),
-
   tvSimilar: (id: number) =>
     tmdbFetch<TMDBResponse<TMDBItem>>(`/tv/${id}/similar`),
 };
 
-// Helper to get display name
 export const getTitle = (item: TMDBItem) => item.title || item.name || '未知';
 export const getYear = (item: TMDBItem) => (item.release_date || item.first_air_date || '').slice(0, 4);
 export const getMediaType = (item: TMDBItem): 'movie' | 'tv' => {
