@@ -1,22 +1,20 @@
-import { CATEGORIES } from '@/lib/videoApi';
-import { Link, useLocation } from 'react-router-dom';
 import { Home } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+
+const NAV_ITEMS = [
+  { to: '/', label: '首页', icon: <Home className="w-4 h-4" /> },
+  { to: '/category/movie', label: '电影', icon: <span className="text-sm">🎬</span> },
+  { to: '/category/tv', label: '电视剧', icon: <span className="text-sm">📺</span> },
+  { to: '/category/anime', label: '日本动漫', icon: <span className="text-sm">🎌</span> },
+  { to: '/category/animation', label: '动画', icon: <span className="text-sm">✨</span> },
+];
 
 export default function NavBar() {
   const { pathname } = useLocation();
 
-  const links = [
-    { to: '/', label: '首页', icon: <Home className="w-4 h-4" /> },
-    ...Object.values(CATEGORIES).map((c) => ({
-      to: `/category/${c.id}`,
-      label: c.label,
-      icon: <span className="text-sm">{c.icon}</span>,
-    })),
-  ];
-
   return (
     <nav className="flex gap-1 overflow-x-auto scrollbar-hide py-3">
-      {links.map((link) => {
+      {NAV_ITEMS.map((link) => {
         const active = pathname === link.to;
         return (
           <Link

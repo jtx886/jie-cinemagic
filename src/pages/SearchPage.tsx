@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { fetchVodList, type VodItem } from '@/lib/videoApi';
+import { tmdb, type TMDBItem } from '@/lib/tmdb';
 import Header from '@/components/Header';
 import NavBar from '@/components/NavBar';
 import VideoCard from '@/components/VideoCard';
@@ -9,7 +9,7 @@ import { Loader2, SearchX } from 'lucide-react';
 export default function SearchPage() {
   const [params] = useSearchParams();
   const query = params.get('q') || '';
-  const [items, setItems] = useState<VodItem[]>([]);
+  const [items, setItems] = useState<TMDBItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -18,10 +18,11 @@ export default function SearchPage() {
     if (!query) return;
     setLoading(true);
     setPage(1);
-    fetchVodList({ wd: query, pg: 1 })
+    tmdb.search(query)
       .then((res) => {
-        setItems(res.list || []);
-        setTotalPages(res.pagecount || 1);
+        // Filter to only movie and tv
+        setItems(res.results.filter((r) => r.media_type === 'movie' || r.media_type === 'tv'));
+        setTotalPages(res.total_pages);
       })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
@@ -31,9 +32,9 @@ export default function SearchPage() {
     const next = page + 1;
     if (next > totalPages) return;
     setLoading(true);
-    fetchVodList({ wd: query, pg: next })
+    tmdb.search(query, next)
       .then((res) => {
-        setItems((prev) => [...prev, ...(res.list || [])]);
+        setItems((prev) => [...prev, ...res.results.filter((r) => r.media_type === 'movie' || r.media_type === 'tv')]);
         setPage(next);
       })
       .finally(() => setLoading(false));
@@ -61,7 +62,7 @@ export default function SearchPage() {
           <>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
               {items.map((item) => (
-                <VideoCard key={item.vod_id} item={item} />
+                <VideoCard key={`${item.id}-${item.media_type}`} item={item} />
               ))}
             </div>
             {page < totalPages && (
