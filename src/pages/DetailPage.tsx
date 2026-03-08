@@ -210,13 +210,6 @@ export default function DetailPage() {
                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
                   <p className="text-sm text-muted-foreground">正在搜索播放资源...</p>
                 </div>
-              ) : vodError ? (
-                <div className="aspect-video glass rounded-2xl flex flex-col items-center justify-center gap-3">
-                  <p className="text-sm text-muted-foreground">{vodError}</p>
-                  <button onClick={() => searchPlayableSources()} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
-                    重新搜索
-                  </button>
-                </div>
               ) : currentUrl ? (
                 <div className="glass rounded-2xl overflow-hidden">
                   {shouldUseIframe ? (
@@ -235,12 +228,25 @@ export default function DetailPage() {
                       autoPlaySignal={autoPlaySignal}
                       onError={() => {
                         setForceIframe(true);
-                        setVodError('HLS线路播放失败，已切换为解析播放，请尝试切换解析线路');
+                        setPlayNotice('HLS线路播放失败，已自动切换到解析播放，可切换解析线路继续尝试');
                       }}
                     />
                   )}
                 </div>
+              ) : vodError ? (
+                <div className="aspect-video glass rounded-2xl flex flex-col items-center justify-center gap-3">
+                  <p className="text-sm text-muted-foreground">{vodError}</p>
+                  <button onClick={() => searchPlayableSources()} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
+                    重新搜索
+                  </button>
+                </div>
               ) : null}
+
+              {playNotice && (
+                <div className="glass rounded-xl px-3 py-2 text-xs text-muted-foreground">
+                  {playNotice}
+                </div>
+              )}
 
               {currentUrl && (
                 <div className="glass rounded-2xl p-3">
