@@ -165,7 +165,8 @@ export default function DetailPage() {
   };
 
   const iframeUrl = currentUrl ? `${PARSER_LINES[activeParser].base}${encodeURIComponent(currentUrl)}` : '';
-  const shouldUseIframe = forceIframe || (!!currentUrl && !isM3u8Url(currentUrl));
+  // Always use iframe parsing - it's the most reliable method
+  const shouldUseIframe = true;
 
   if (loading) {
     return (
