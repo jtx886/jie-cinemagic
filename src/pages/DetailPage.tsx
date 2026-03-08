@@ -19,9 +19,10 @@ import HlsPlayer from '@/components/HlsPlayer';
 import { Loader2, Calendar, MapPin, Star, Clapperboard, Play } from 'lucide-react';
 
 const PARSER_LINES = [
-  { name: '解析1', base: 'https://jx.xmflv.com/?url=' },
-  { name: '解析2', base: 'https://jx.bozrc.com:4433/player/?url=' },
-  { name: '解析3', base: 'https://www.yemu.xyz/?url=' },
+  { name: '线路1', base: 'https://jx.xmflv.com/?url=' },
+  { name: '线路2', base: 'https://jx.bozrc.com:4433/player/?url=' },
+  { name: '线路3', base: 'https://www.yemu.xyz/?url=' },
+  { name: '线路4', base: 'https://jx.m3u8.tv/jiexi/?url=' },
 ];
 
 const isM3u8Url = (url: string) => url.includes('.m3u8');
