@@ -191,6 +191,13 @@ export const tmdb = {
   tvSeasonDetail: (tvId: number, seasonNumber: number) => tmdbFetch<{ episodes: TMDBEpisode[] }>(`/tv/${tvId}/season/${seasonNumber}`),
   movieSimilar: (id: number) => tmdbFetch<TMDBResponse<TMDBItem>>(`/movie/${id}/similar`),
   tvSimilar: (id: number) => tmdbFetch<TMDBResponse<TMDBItem>>(`/tv/${id}/similar`),
+  guoman: (page = 1) =>
+    tmdbFetch<TMDBResponse<TMDBItem>>('/discover/tv', {
+      page: String(page),
+      with_genres: '16',
+      with_original_language: 'zh',
+      sort_by: 'popularity.desc',
+    }),
 };
 
 export const getTitle = (item: TMDBItem) => item.title || item.name || '未知';
