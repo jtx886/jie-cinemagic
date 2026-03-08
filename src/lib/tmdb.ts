@@ -1,14 +1,8 @@
+import { supabase } from '@/integrations/supabase/client';
+
 const TMDB_API_KEY = 'cb44223c5dee5676ed3a839f42ed27e3';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
-
-const VOD_API = 'https://api.ffzyapi.com/api.php/provide/vod/';
-
-const CORS_PROXIES = [
-  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  (url: string) => `https://cors.isomorphic-git.org/${url}`,
-];
 
 export const getImageUrl = (path: string | null, size = 'w500') => {
   if (!path) return '/placeholder.svg';
