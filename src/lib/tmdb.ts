@@ -2,9 +2,13 @@ const TMDB_API_KEY = 'cb44223c5dee5676ed3a839f42ed27e3';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
 
-// CORS proxy for Chinese video APIs
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 const VOD_API = 'https://api.ffzyapi.com/api.php/provide/vod/';
+
+const CORS_PROXIES = [
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url: string) => `https://cors.isomorphic-git.org/${url}`,
+];
 
 export const getImageUrl = (path: string | null, size = 'w500') => {
   if (!path) return '/placeholder.svg';
@@ -16,7 +20,6 @@ export const getBackdropUrl = (path: string | null) => {
   return `${IMG_BASE}/w1280${path}`;
 };
 
-// ---- TMDB types ----
 export interface TMDBItem {
   id: number;
   title?: string;
@@ -100,7 +103,6 @@ async function tmdbFetch<T>(endpoint: string, params: Record<string, string> = {
   return res.json();
 }
 
-// ---- VOD API (for actual video streams) ----
 export interface VodItem {
   vod_id: number;
   vod_name: string;
@@ -120,51 +122,79 @@ export interface PlaySource {
 interface VodResponse {
   code: number;
   list: VodItem[];
-  total: number;
-  pagecount: number;
+}
+
+async function fetchWithTimeout(url: string, timeout = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchVodViaProxy(apiUrl: string): Promise<VodResponse | null> {
+  for (const buildProxyUrl of CORS_PROXIES) {
+    try {
+      const res = await fetchWithTimeout(buildProxyUrl(apiUrl));
+      if (!res.ok) continue;
+      const data = (await res.json()) as VodResponse;
+      if (data?.list) return data;
+    } catch {
+      continue;
+    }
+  }
+  return null;
 }
 
 export async function searchVod(keyword: string): Promise<VodItem[]> {
-  try {
-    const url = `${VOD_API}?ac=detail&wd=${encodeURIComponent(keyword)}`;
-    const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
-    if (!res.ok) throw new Error('VOD API error');
-    const data: VodResponse = await res.json();
-    return data.list || [];
-  } catch (e) {
-    console.error('VOD search error:', e);
-    return [];
-  }
+  const safeKeyword = keyword.trim().slice(0, 80);
+  if (!safeKeyword) return [];
+
+  const url = `${VOD_API}?ac=detail&wd=${encodeURIComponent(safeKeyword)}`;
+  const data = await fetchVodViaProxy(url);
+  return data?.list || [];
+}
+
+export function buildVodQueryCandidates(title: string, year?: string) {
+  const cleaned = title
+    .replace(/[：:（(].*?[）)]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const candidates = [title.trim(), cleaned];
+  if (year) candidates.push(`${cleaned} ${year}`);
+  return Array.from(new Set(candidates.filter(Boolean)));
 }
 
 export function parsePlayUrls(playUrl: string, playFrom: string): PlaySource[] {
   const sources = playFrom.split('$$$');
   const urlGroups = playUrl.split('$$$');
 
-  return sources.map((sourceName, i) => {
-    const urlStr = urlGroups[i] || '';
-    const episodes = urlStr.split('#').filter(Boolean).map((ep) => {
-      const parts = ep.split('$');
-      return { label: parts[0] || '播放', url: parts[1] || '' };
-    });
-    return { name: sourceName, urls: episodes };
-  }).filter(s => s.urls.length > 0 && s.urls.some(u => u.url.includes('.m3u8')));
+  return sources
+    .map((sourceName, i) => {
+      const urlStr = urlGroups[i] || '';
+      const episodes = urlStr
+        .split('#')
+        .filter(Boolean)
+        .map((ep) => {
+          const parts = ep.split('$');
+          return { label: parts[0] || '播放', url: parts[1] || '' };
+        })
+        .filter((e) => e.url.includes('.m3u8'));
+      return { name: sourceName, urls: episodes };
+    })
+    .filter((s) => s.urls.length > 0);
 }
 
-// ---- TMDB public API ----
 export const tmdb = {
-  trending: (page = 1) =>
-    tmdbFetch<TMDBResponse<TMDBItem>>('/trending/all/week', { page: String(page) }),
-  moviesPopular: (page = 1) =>
-    tmdbFetch<TMDBResponse<TMDBItem>>('/movie/popular', { page: String(page) }),
-  moviesTopRated: (page = 1) =>
-    tmdbFetch<TMDBResponse<TMDBItem>>('/movie/top_rated', { page: String(page) }),
-  moviesNowPlaying: (page = 1) =>
-    tmdbFetch<TMDBResponse<TMDBItem>>('/movie/now_playing', { page: String(page) }),
-  tvPopular: (page = 1) =>
-    tmdbFetch<TMDBResponse<TMDBItem>>('/tv/popular', { page: String(page) }),
-  tvTopRated: (page = 1) =>
-    tmdbFetch<TMDBResponse<TMDBItem>>('/tv/top_rated', { page: String(page) }),
+  trending: (page = 1) => tmdbFetch<TMDBResponse<TMDBItem>>('/trending/all/week', { page: String(page) }),
+  moviesPopular: (page = 1) => tmdbFetch<TMDBResponse<TMDBItem>>('/movie/popular', { page: String(page) }),
+  moviesTopRated: (page = 1) => tmdbFetch<TMDBResponse<TMDBItem>>('/movie/top_rated', { page: String(page) }),
+  moviesNowPlaying: (page = 1) => tmdbFetch<TMDBResponse<TMDBItem>>('/movie/now_playing', { page: String(page) }),
+  tvPopular: (page = 1) => tmdbFetch<TMDBResponse<TMDBItem>>('/tv/popular', { page: String(page) }),
+  tvTopRated: (page = 1) => tmdbFetch<TMDBResponse<TMDBItem>>('/tv/top_rated', { page: String(page) }),
   anime: (page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/discover/tv', {
       page: String(page),
@@ -178,18 +208,12 @@ export const tmdb = {
       with_genres: '16',
       sort_by: 'popularity.desc',
     }),
-  search: (query: string, page = 1) =>
-    tmdbFetch<TMDBResponse<TMDBItem>>('/search/multi', { query, page: String(page) }),
-  movieDetail: (id: number) =>
-    tmdbFetch<TMDBMovieDetail>(`/movie/${id}`),
-  tvDetail: (id: number) =>
-    tmdbFetch<TMDBTVDetail>(`/tv/${id}`),
-  tvSeasonDetail: (tvId: number, seasonNumber: number) =>
-    tmdbFetch<{ episodes: TMDBEpisode[] }>(`/tv/${tvId}/season/${seasonNumber}`),
-  movieSimilar: (id: number) =>
-    tmdbFetch<TMDBResponse<TMDBItem>>(`/movie/${id}/similar`),
-  tvSimilar: (id: number) =>
-    tmdbFetch<TMDBResponse<TMDBItem>>(`/tv/${id}/similar`),
+  search: (query: string, page = 1) => tmdbFetch<TMDBResponse<TMDBItem>>('/search/multi', { query, page: String(page) }),
+  movieDetail: (id: number) => tmdbFetch<TMDBMovieDetail>(`/movie/${id}`),
+  tvDetail: (id: number) => tmdbFetch<TMDBTVDetail>(`/tv/${id}`),
+  tvSeasonDetail: (tvId: number, seasonNumber: number) => tmdbFetch<{ episodes: TMDBEpisode[] }>(`/tv/${tvId}/season/${seasonNumber}`),
+  movieSimilar: (id: number) => tmdbFetch<TMDBResponse<TMDBItem>>(`/movie/${id}/similar`),
+  tvSimilar: (id: number) => tmdbFetch<TMDBResponse<TMDBItem>>(`/tv/${id}/similar`),
 };
 
 export const getTitle = (item: TMDBItem) => item.title || item.name || '未知';

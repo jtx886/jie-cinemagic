@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   tmdb,
@@ -6,6 +6,7 @@ import {
   getBackdropUrl,
   searchVod,
   parsePlayUrls,
+  buildVodQueryCandidates,
   type TMDBMovieDetail,
   type TMDBTVDetail,
   type TMDBEpisode,
@@ -28,7 +29,6 @@ export default function DetailPage() {
   const [similar, setSimilar] = useState<TMDBItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Video playback state
   const [playing, setPlaying] = useState(false);
   const [playUrl, setPlayUrl] = useState('');
   const [vodSources, setVodSources] = useState<PlaySource[]>([]);
@@ -37,8 +37,8 @@ export default function DetailPage() {
   const [vodLoading, setVodLoading] = useState(false);
   const [vodError, setVodError] = useState('');
 
-  // TV season
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const cachedSourcesRef = useRef<Record<string, PlaySource[]>>({});
 
   useEffect(() => {
     setLoading(true);
@@ -72,43 +72,61 @@ export default function DetailPage() {
     }
   }, [mediaType, mediaId]);
 
-  // Search for video sources when user clicks play
-  const handlePlay = async () => {
-    const title = movie?.title || tv?.name || '';
-    if (!title) return;
+  const title = movie?.title || tv?.name || '';
+  const year = (movie?.release_date || tv?.first_air_date || '').slice(0, 4);
+
+  const searchCandidates = useMemo(() => buildVodQueryCandidates(title, year), [title, year]);
+
+  const searchPlayableSources = async () => {
+    const cacheKey = `${mediaType}-${mediaId}`;
+    if (cachedSourcesRef.current[cacheKey]?.length) {
+      const cached = cachedSourcesRef.current[cacheKey];
+      setVodSources(cached);
+      setActiveSource(0);
+      setActiveEp(0);
+      setPlayUrl(cached[0]?.urls[0]?.url || '');
+      return true;
+    }
 
     setVodLoading(true);
     setVodError('');
-    setPlaying(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      const results = await searchVod(title);
-      if (results.length === 0) {
-        setVodError('未找到播放资源，请尝试其他影视');
-        setVodLoading(false);
-        return;
+      for (const candidate of searchCandidates) {
+        const results = await searchVod(candidate);
+        if (!results.length) continue;
+
+        const strictMatch = results.find((r) => r.vod_name.includes(candidate) || candidate.includes(r.vod_name));
+        const match = strictMatch || results[0];
+        const sources = parsePlayUrls(match.vod_play_url, match.vod_play_from);
+
+        if (sources.length > 0 && sources[0]?.urls[0]?.url) {
+          cachedSourcesRef.current[cacheKey] = sources;
+          setVodSources(sources);
+          setActiveSource(0);
+          setActiveEp(0);
+          setPlayUrl(sources[0].urls[0].url);
+          return true;
+        }
       }
 
-      // Find best match
-      const match = results.find((r) => r.vod_name === title) || results[0];
-      const sources = parsePlayUrls(match.vod_play_url, match.vod_play_from);
-
-      if (sources.length === 0 || sources.every((s) => s.urls.length === 0)) {
-        setVodError('未找到可用的m3u8播放源');
-        setVodLoading(false);
-        return;
-      }
-
-      setVodSources(sources);
-      setActiveSource(0);
-      setActiveEp(0);
-      setPlayUrl(sources[0].urls[0].url);
+      setVodError('未找到可用播放源，请换一部试试');
+      return false;
     } catch {
       setVodError('资源搜索失败，请稍后重试');
+      return false;
     } finally {
       setVodLoading(false);
     }
+  };
+
+  const handlePlay = async () => {
+    if (!title) return;
+    setPlaying(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (playUrl) return;
+    await searchPlayableSources();
   };
 
   const selectEpisode = (sourceIdx: number, epIdx: number) => {
@@ -143,8 +161,6 @@ export default function DetailPage() {
     );
   }
 
-  const title = movie?.title || tv?.name || '';
-  const year = (movie?.release_date || tv?.first_air_date || '').slice(0, 4);
   const genres = detail.genres?.map((g) => g.name).join(' / ') || '';
   const backdrop = getBackdropUrl(detail.backdrop_path);
 
@@ -161,33 +177,26 @@ export default function DetailPage() {
       <div className="relative z-10">
         <Header />
         <main className="container mx-auto px-4 pb-20">
-          {/* Player area */}
           {playing && (
             <div className="mt-4 space-y-3">
               {vodLoading ? (
                 <div className="aspect-video glass rounded-2xl flex flex-col items-center justify-center gap-3">
                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
                   <p className="text-sm text-muted-foreground">
-                    <Search className="w-4 h-4 inline mr-1" />
-                    正在搜索播放资源...
+                    <Search className="w-4 h-4 inline mr-1" /> 正在搜索播放资源...
                   </p>
                 </div>
               ) : vodError ? (
                 <div className="aspect-video glass rounded-2xl flex flex-col items-center justify-center gap-3">
                   <p className="text-sm text-muted-foreground">{vodError}</p>
-                  <button
-                    onClick={handlePlay}
-                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium"
-                  >
+                  <button onClick={searchPlayableSources} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
                     重新搜索
                   </button>
                 </div>
               ) : playUrl ? (
                 <div className="glass rounded-2xl overflow-hidden">
-                  {/* Source & episode selector */}
                   {vodSources.length > 0 && (
                     <div className="p-3 border-b border-border/50">
-                      {/* Source tabs */}
                       {vodSources.length > 1 && (
                         <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide">
                           <span className="text-xs text-muted-foreground shrink-0 py-1">线路：</span>
@@ -196,9 +205,7 @@ export default function DetailPage() {
                               key={i}
                               onClick={() => selectEpisode(i, 0)}
                               className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                                i === activeSource
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+                                i === activeSource ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
                               }`}
                             >
                               {src.name || `线路${i + 1}`}
@@ -206,7 +213,7 @@ export default function DetailPage() {
                           ))}
                         </div>
                       )}
-                      {/* Episode buttons */}
+
                       {vodSources[activeSource]?.urls.length > 1 && (
                         <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto scrollbar-hide">
                           {vodSources[activeSource].urls.map((ep, i) => (
@@ -214,9 +221,7 @@ export default function DetailPage() {
                               key={i}
                               onClick={() => selectEpisode(activeSource, i)}
                               className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                                i === activeEp
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+                                i === activeEp ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
                               }`}
                             >
                               {ep.label}
@@ -226,55 +231,56 @@ export default function DetailPage() {
                       )}
                     </div>
                   )}
-                  <HlsPlayer url={playUrl} />
-                  <div className="px-3 py-2 text-[10px] text-muted-foreground/60 text-center">
-                    无广告直连播放 · 如加载失败请切换线路
-                  </div>
+                  <HlsPlayer url={playUrl} onError={() => setVodError('该线路播放失败，请切换线路')} />
                 </div>
               ) : null}
             </div>
           )}
 
-          {/* Info */}
           <div className="mt-6 flex flex-col md:flex-row gap-6">
             <div className="shrink-0 self-start">
               <img
                 src={getImageUrl(detail.poster_path, 'w342')}
                 alt={title}
                 className="w-36 md:w-48 aspect-[2/3] object-cover rounded-xl glass"
-                onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                }}
               />
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-foreground">{title}</h1>
               <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
                 {genres && (
-                  <span className="flex items-center gap-1"><Clapperboard className="w-3.5 h-3.5" /> {genres}</span>
+                  <span className="flex items-center gap-1">
+                    <Clapperboard className="w-3.5 h-3.5" /> {genres}
+                  </span>
                 )}
                 {year && (
-                  <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {year}</span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" /> {year}
+                  </span>
                 )}
                 {detail.vote_average > 0 && (
-                  <span className="flex items-center gap-1 text-yellow-400">
-                    <Star className="w-3.5 h-3.5 fill-yellow-400" /> {detail.vote_average.toFixed(1)}
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Star className="w-3.5 h-3.5" /> {detail.vote_average.toFixed(1)}
                   </span>
                 )}
                 {movie?.production_countries?.[0] && (
-                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {movie.production_countries[0].name}</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" /> {movie.production_countries[0].name}
+                  </span>
                 )}
                 {tv?.origin_country?.[0] && (
-                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {tv.origin_country[0]}</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" /> {tv.origin_country[0]}
+                  </span>
                 )}
               </div>
-              {detail.overview && (
-                <p className="text-sm text-secondary-foreground/80 mt-4 leading-relaxed line-clamp-4">{detail.overview}</p>
-              )}
+              {detail.overview && <p className="text-sm text-secondary-foreground/80 mt-4 leading-relaxed line-clamp-4">{detail.overview}</p>}
 
-              <button
-                onClick={handlePlay}
-                className="mt-5 flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm glow hover:opacity-90 transition-all"
-              >
-                <Play className="w-5 h-5" /> {playing ? '重新搜索资源' : '搜索并播放'}
+              <button onClick={handlePlay} className="mt-5 flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm glow hover:opacity-90 transition-all">
+                <Play className="w-5 h-5" /> {playing ? '继续播放' : '搜索并播放'}
               </button>
 
               {tv && (
@@ -285,7 +291,6 @@ export default function DetailPage() {
             </div>
           </div>
 
-          {/* TV Season info from TMDB */}
           {mediaType === 'tv' && tv && (
             <div className="mt-8 space-y-4">
               {tv.seasons.filter((s) => s.season_number > 0).length > 1 && (
@@ -295,9 +300,7 @@ export default function DetailPage() {
                       key={season.season_number}
                       onClick={() => handleSeasonChange(season.season_number)}
                       className={`shrink-0 px-4 py-2 rounded-xl text-xs font-medium transition-all ${
-                        season.season_number === selectedSeason
-                          ? 'bg-primary text-primary-foreground glow'
-                          : 'glass text-muted-foreground hover:text-foreground'
+                        season.season_number === selectedSeason ? 'bg-primary text-primary-foreground glow' : 'glass text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       {season.name}
@@ -311,9 +314,7 @@ export default function DetailPage() {
                   <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide">
                     {episodes.map((ep) => (
                       <div key={ep.episode_number} className="flex gap-3 p-2 rounded-lg bg-secondary/30">
-                        <span className="shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-medium text-foreground">
-                          {ep.episode_number}
-                        </span>
+                        <span className="shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-medium text-foreground">{ep.episode_number}</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-foreground truncate">{ep.name}</p>
                           {ep.air_date && <p className="text-[10px] text-muted-foreground">{ep.air_date}</p>}
@@ -326,7 +327,6 @@ export default function DetailPage() {
             </div>
           )}
 
-          {/* Similar */}
           {similar.length > 0 && (
             <div className="mt-12">
               <h3 className="text-lg font-bold mb-4">🎯 相关推荐</h3>
