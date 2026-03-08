@@ -11,6 +11,7 @@ const CATEGORY_MAP: Record<string, { label: string; icon: string; fetcher: (page
   tv: { label: '热门剧集', icon: '📺', fetcher: (p) => tmdb.tvPopular(p) },
   anime: { label: '日本动漫', icon: '🎌', fetcher: (p) => tmdb.anime(p) },
   animation: { label: '动画精选', icon: '✨', fetcher: (p) => tmdb.dongman(p) },
+  guoman: { label: '国漫', icon: '🐉', fetcher: (p) => tmdb.guoman(p) },
   toprated: { label: '高分电影', icon: '⭐', fetcher: (p) => tmdb.moviesTopRated(p) },
 };
 

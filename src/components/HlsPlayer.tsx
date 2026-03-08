@@ -64,7 +64,7 @@ export default function HlsPlayer({ url, autoPlaySignal = 0, onError }: Props) {
     video.playsInline = true;
     video.preload = 'auto';
 
-    if (url.includes('.m3u8')) {
+    if (url.includes('.m3u8') || url.includes('/functions/v1/vod-stream')) {
       if (Hls.isSupported()) {
         const hls = new Hls({
           maxBufferLength: 20,

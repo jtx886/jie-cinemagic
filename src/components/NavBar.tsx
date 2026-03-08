@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { to: '/category/movie', label: '电影', icon: <span className="text-sm">🎬</span> },
   { to: '/category/tv', label: '电视剧', icon: <span className="text-sm">📺</span> },
   { to: '/category/anime', label: '日本动漫', icon: <span className="text-sm">🎌</span> },
+  { to: '/category/guoman', label: '国漫', icon: <span className="text-sm">🐉</span> },
   { to: '/me', label: '我的', icon: <User className="w-4 h-4" /> },
 ];
 

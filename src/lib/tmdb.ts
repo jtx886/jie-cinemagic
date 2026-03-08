@@ -159,7 +159,7 @@ export function parsePlayUrls(playUrl: string, playFrom: string): PlaySource[] {
           const parts = ep.split('$');
           return { label: parts[0] || '播放', url: parts[1] || '' };
         })
-        .filter((e) => e.url.includes('.m3u8'));
+        .filter((e) => e.url);
       return { name: sourceName, urls: episodes };
     })
     .filter((s) => s.urls.length > 0);
