@@ -1,10 +1,12 @@
-import { Search, Film } from 'lucide-react';
+import { Search, Film, User } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Header() {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,7 +17,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 glass-strong">
-      <div className="container mx-auto flex items-center justify-between gap-4 py-3 px-4">
+      <div className="container mx-auto flex items-center justify-between gap-3 py-3 px-4">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <Film className="w-7 h-7 text-primary" />
           <h1 className="text-xl font-bold text-gradient hidden sm:block">JIE影视4K</h1>
@@ -34,11 +36,15 @@ export default function Header() {
           </div>
         </form>
 
-        <div className="text-xs text-muted-foreground hidden md:block text-right leading-tight">
-          <span className="text-foreground/70 font-medium">杰同学🐾</span>
-          <br />
-          <span className="text-[10px]">桂ICP备202602110908号</span>
-        </div>
+        <Link
+          to={user ? '/me' : '/auth'}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl glass text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <User className="w-4 h-4" />
+          <span className="hidden sm:inline text-xs">
+            {user ? (profile?.username || '我的') : '登录'}
+          </span>
+        </Link>
       </div>
     </header>
   );
