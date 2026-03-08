@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-<title>JIE影视4K - 独立播放器</title>
+<title>JIE影视4K - 免费在线观看</title>
 <meta name="description" content="JIE影视4K - 免费在线观看高清电影、电视剧、动漫，无广告，支持4K高清播放">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet"/>
-<!-- DPlayer + HLS.js -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dplayer@1.27.1/dist/DPlayer.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dplayer@1.27.1/dist/DPlayer.min.js"></script>
@@ -33,20 +32,16 @@ body{background:var(--bg);color:var(--fg);font-family:'Noto Sans SC',system-ui,s
 .text-gradient{background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .glow{box-shadow:0 0 20px rgba(0,180,220,.3),0 0 60px rgba(0,180,220,.1)}
 .scrollbar-hide::-webkit-scrollbar{display:none}.scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}
-
 .container{max-width:1100px;margin:0 auto;padding:0 16px;position:relative;z-index:10}
-
 header{padding:16px 0;display:flex;align-items:center;justify-content:space-between}
 header h1{font-size:22px;font-weight:900;cursor:pointer}
 header .search-box{display:flex;gap:8px;flex:1;max-width:420px;margin-left:24px}
 header input{flex:1;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--muted);color:var(--fg);font-size:14px;outline:none}
 header input:focus{border-color:var(--primary)}
-
 .banner{border-radius:var(--radius);padding:20px;margin:16px 0 24px;text-align:center}
 .banner h2{font-size:clamp(22px,3.5vw,32px);font-weight:700;margin-bottom:6px}
 .banner p{font-size:13px;color:var(--muted-fg)}
 .banner .credits{margin-top:10px;font-size:11px;color:var(--muted-fg);display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
-
 .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:var(--radius);border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-primary{background:var(--primary);color:var(--primary-fg)}
 .btn-primary:hover{opacity:.88}
@@ -56,10 +51,7 @@ header input:focus{border-color:var(--primary)}
 .btn-sm{padding:6px 12px;font-size:11px;border-radius:10px}
 .btn-xs{padding:4px 10px;font-size:11px;border-radius:8px}
 button:disabled{opacity:.5;cursor:not-allowed}
-
 .status{font-size:12px;color:var(--muted-fg);margin-top:8px}
-.status.error{color:var(--destructive)}
-
 .player-wrap{border-radius:var(--radius);overflow:hidden;margin-bottom:12px;position:relative}
 .player-inner{position:relative;width:100%;aspect-ratio:16/9;background:#000}
 .player-inner iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -69,52 +61,37 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .player-overlay .line-info{display:flex;align-items:center;gap:6px}
 .player-overlay .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* DPlayer overrides for dark theme */
 .dplayer{border-radius:var(--radius);overflow:hidden}
 .dplayer .dplayer-video-wrap{background:#000}
-
 .line-row{display:flex;gap:6px;overflow-x:auto;align-items:center;padding:4px 0}
 .line-row .label{font-size:11px;color:var(--muted-fg);white-space:nowrap}
-
 .ep-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px;max-height:200px;overflow-y:auto}
-
-.results{display:flex;flex-direction:column;gap:10px;margin-top:16px}
-.result-item{border-radius:var(--radius);padding:12px;display:flex;gap:12px}
-.result-item img{width:80px;height:110px;object-fit:cover;border-radius:10px;flex-shrink:0}
-.result-info{flex:1;min-width:0}
-.result-info h3{font-size:15px;font-weight:600;margin-bottom:4px}
-.result-info p{font-size:12px;color:var(--muted-fg);margin-bottom:8px}
-.result-info .ep-btns{display:flex;flex-wrap:wrap;gap:5px}
-
 .cat-section{margin-bottom:32px}
 .cat-section h3{font-size:17px;font-weight:700;margin-bottom:12px}
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
 .cat-card{border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s}
 .cat-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.5)}
 .cat-card img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block}
-.cat-card .info{padding:8px;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cat-card .score{font-size:10px;color:var(--muted-fg)}
-
+.cat-card .info{padding:8px}
+.cat-card .title{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-card .sub{font-size:10px;color:var(--muted-fg);margin-top:2px}
 .detail-hero{display:flex;gap:20px;margin:20px 0}
-.detail-poster{width:140px;flex-shrink:0}
+.detail-poster{width:160px;flex-shrink:0}
 .detail-poster img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:var(--radius)}
 .detail-meta{flex:1}
 .detail-meta h2{font-size:22px;font-weight:700;margin-bottom:8px}
 .detail-meta .tags{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--muted-fg);margin-bottom:10px}
-.detail-meta .overview{font-size:13px;line-height:1.7;color:var(--secondary-fg);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-
+.detail-meta .overview{font-size:13px;line-height:1.7;color:var(--secondary-fg);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.play-mode-tabs{display:flex;gap:6px;margin-bottom:10px}
+.nav-tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:20px;padding-bottom:4px}
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:10px;font-size:12px;font-weight:500;z-index:9999;transition:all .3s;opacity:0;pointer-events:none}
 .toast.show{opacity:1}
 .toast-info{background:var(--primary);color:var(--primary-fg)}
 .toast-error{background:var(--destructive);color:#fff}
 .toast-success{background:var(--success);color:#fff}
-
-.play-mode-tabs{display:flex;gap:6px;margin-bottom:10px}
-
+.pagination{display:flex;gap:6px;justify-content:center;margin-top:20px}
 footer{text-align:center;padding:24px 16px;font-size:11px;color:var(--muted-fg);margin-top:40px}
 footer p{margin:3px 0}
-
 @media(max-width:640px){
   header{flex-wrap:wrap;gap:10px}
   header .search-box{max-width:100%;margin-left:0;order:2;width:100%}
@@ -125,10 +102,8 @@ footer p{margin:3px 0}
 </style>
 </head>
 <body>
-
 <div class="hero-bg"></div>
 <div class="toast" id="toast"></div>
-
 <div class="container">
   <header>
     <h1 class="text-gradient" onclick="showHome()">JIE影视4K</h1>
@@ -145,22 +120,17 @@ footer p{margin:3px 0}
     <p>本站资源均来自互联网，仅供学习交流使用</p>
   </footer>
 </div>
-
 <script>
-// ==================== CONFIG ====================
-const TMDB_KEY = 'cb44223c5dee5676ed3a839f42ed27e3';
-const TMDB = 'https://api.themoviedb.org/3';
-const IMG = 'https://image.tmdb.org/t/p';
-
-// 新的免费影视资源API（黑木耳资源站 + 其他公开采集站）
+// ==================== 免费公开API（无需任何密钥） ====================
 const VOD_APIS = [
-  'https://json.heimuer.xyz/api.php/provide/vod/',
-  'https://json02.heimuer.xyz/api.php/provide/vod/',
-  'https://api.ffzyapi.com/api.php/provide/vod/',
-  'https://api.1080p.one/api.php/provide/vod/',
+  { name: '黑木耳资源', url: 'https://json.heimuer.xyz/api.php/provide/vod/' },
+  { name: '黑木耳备用', url: 'https://json02.heimuer.xyz/api.php/provide/vod/' },
+  { name: '飞速资源', url: 'https://api.ffzyapi.com/api.php/provide/vod/' },
+  { name: '1080P资源', url: 'https://api.1080p.one/api.php/provide/vod/' },
 ];
+// 主API（用于首页分类浏览）
+const PRIMARY_API = VOD_APIS[0].url;
 
-// 解析线路（当m3u8直连失败时使用iframe解析）
 const PARSER_LINES = [
   { name: '解析线路1', base: 'https://jx.xmflv.com/?url=' },
   { name: '解析线路2', base: 'https://jx.playerjy.com/?url=' },
@@ -170,11 +140,21 @@ const PARSER_LINES = [
   { name: '解析线路6', base: 'https://www.ckplayer.vip/jiexi/?url=' },
 ];
 
+// 分类ID映射（苹果CMS标准分类）
+const CATEGORIES = [
+  { id: 0, title: '🔥 最近更新', params: '?ac=detail&pg=1' },
+  { id: 6, title: '🎬 电影', params: '?ac=detail&t=6&pg=1' },
+  { id: 13, title: '📺 国产剧', params: '?ac=detail&t=13&pg=1' },
+  { id: 15, title: '🇯🇵 日韩剧', params: '?ac=detail&t=15&pg=1' },
+  { id: 16, title: '🇺🇸 欧美剧', params: '?ac=detail&t=16&pg=1' },
+  { id: 4, title: '🎌 动漫', params: '?ac=detail&t=4&pg=1' },
+  { id: 5, title: '🎤 综艺', params: '?ac=detail&t=5&pg=1' },
+];
+
 const $ = id => document.getElementById(id);
 const app = $('app');
 const keywordEl = $('keyword');
 let toastTimer = null;
-
 keywordEl.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
 
 function showToast(msg, type = 'info', duration = 3000) {
@@ -185,24 +165,21 @@ function showToast(msg, type = 'info', duration = 3000) {
   toastTimer = setTimeout(() => el.classList.remove('show'), duration);
 }
 
-// ==================== TMDB ====================
-async function tmdbFetch(ep, params = {}) {
-  const sp = new URLSearchParams({ api_key: TMDB_KEY, language: 'zh-CN', ...params });
-  const r = await fetch(`${TMDB}${ep}?${sp}`);
-  if (!r.ok) throw new Error('TMDB error');
+// ==================== API 请求 ====================
+async function apiFetch(apiUrl, params) {
+  const r = await fetch(`${apiUrl}${params}`, { signal: AbortSignal.timeout(12000) });
+  if (!r.ok) throw new Error('API error');
   return r.json();
 }
-function imgUrl(path, size = 'w500') { return path ? `${IMG}/${size}${path}` : ''; }
 
-// ==================== VOD ====================
-async function vodSearch(keyword) {
+// 多源并行搜索
+async function vodSearchAll(keyword) {
   const kw = encodeURIComponent(keyword.trim().slice(0, 80));
   if (!kw) return [];
   const promises = VOD_APIS.map(async api => {
     try {
-      const r = await fetch(`${api}?ac=detail&wd=${kw}`, { signal: AbortSignal.timeout(10000) });
-      if (!r.ok) return [];
-      const d = await r.json(); return d?.list || [];
+      const d = await apiFetch(api.url, `?ac=detail&wd=${kw}`);
+      return (d?.list || []).map(v => ({ ...v, _source: api.name }));
     } catch { return []; }
   });
   const results = await Promise.allSettled(promises);
@@ -220,16 +197,13 @@ function parsePlayUrls(playUrl = '', playFrom = '') {
       const [label, url] = ep.split('$');
       return { label: label || '播放', url: url || '' };
     }).filter(v => v.url);
-    return { name, urls: eps };
+    return { name: name || '默认', urls: eps };
   }).filter(v => v.urls.length);
 }
 
-// ==================== DPLAYER (m3u8 直连) ====================
+// ==================== DPLAYER ====================
 let dp = null;
-
-function destroyDPlayer() {
-  try { if (dp) { dp.destroy(); dp = null; } } catch {}
-}
+function destroyDPlayer() { try { if (dp) { dp.destroy(); dp = null; } } catch {} }
 
 function playWithDPlayer(url, container) {
   destroyDPlayer();
@@ -237,57 +211,33 @@ function playWithDPlayer(url, container) {
   return new Promise((resolve, reject) => {
     try {
       dp = new DPlayer({
-        container,
-        autoplay: true,
-        theme: '#00b4d8',
-        lang: 'zh-cn',
+        container, autoplay: true, theme: '#00b4d8', lang: 'zh-cn',
         video: {
-          url,
-          type: 'customHls',
+          url, type: 'customHls',
           customType: {
-            customHls: function (video, player) {
-              const hls = new Hls({
-                maxBufferLength: 30,
-                maxMaxBufferLength: 60,
-              });
+            customHls(video) {
+              const hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60 });
               hls.loadSource(video.src);
               hls.attachMedia(video);
-              hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                video.play().catch(() => {});
-                resolve();
-              });
-              hls.on(Hls.Events.ERROR, (_, data) => {
-                if (data.fatal) {
-                  reject(new Error('HLS fatal error'));
-                }
-              });
-              // Timeout: if no manifest in 10s, reject
-              setTimeout(() => reject(new Error('HLS timeout')), 10000);
+              hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); resolve(); });
+              hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) reject(new Error('HLS error')); });
+              setTimeout(() => reject(new Error('timeout')), 10000);
             },
           },
         },
       });
-    } catch (e) {
-      reject(e);
-    }
+    } catch (e) { reject(e); }
   });
 }
 
-// ==================== IFRAME PLAYER (解析播放) ====================
-let currentRawUrl = '';
-let currentParserIdx = 0;
-let rotateTimer = null;
-let triedParsers = new Set();
-let playMode = 'auto'; // 'auto' | 'dplayer' | 'iframe'
+// ==================== IFRAME 播放器 + 自动轮询 ====================
+let currentRawUrl = '', currentParserIdx = 0, rotateTimer = null, triedParsers = new Set();
+let playMode = 'auto';
 
-function clearRotate() {
-  clearTimeout(rotateTimer);
-  triedParsers.clear();
-}
+function clearRotate() { clearTimeout(rotateTimer); triedParsers.clear(); }
 
 function updateLineButtons() {
-  const btns = document.querySelectorAll('#parserBtns .btn');
-  btns.forEach((b, i) => {
+  document.querySelectorAll('#parserBtns .pbtn').forEach((b, i) => {
     b.classList.toggle('btn-active', i === currentParserIdx);
     b.classList.toggle('btn-secondary', i !== currentParserIdx);
   });
@@ -303,27 +253,19 @@ function setPlayerOverlay(msg, spinning = false) {
 
 function playInIframe(rawUrl, parserIdx = 0) {
   destroyDPlayer();
-  currentRawUrl = rawUrl;
-  currentParserIdx = parserIdx;
+  currentRawUrl = rawUrl; currentParserIdx = parserIdx;
   const wrap = $('playerInner');
   if (!wrap) return;
-
   const iframeUrl = PARSER_LINES[parserIdx].base + encodeURIComponent(rawUrl);
   wrap.innerHTML = `<iframe id="playFrame" src="${iframeUrl}" allowfullscreen allow="autoplay;encrypted-media;fullscreen;picture-in-picture" referrerpolicy="no-referrer"></iframe>`;
   updateLineButtons();
   setPlayerOverlay(`正在使用 ${PARSER_LINES[parserIdx].name} 加载…`, true);
-
   triedParsers.add(parserIdx);
-
   clearTimeout(rotateTimer);
   rotateTimer = setTimeout(() => tryNextParser(), 12000);
-
   const frame = $('playFrame');
   if (frame) {
-    frame.addEventListener('load', () => {
-      clearTimeout(rotateTimer);
-      setPlayerOverlay(`${PARSER_LINES[parserIdx].name} 加载完成`, false);
-    });
+    frame.addEventListener('load', () => { clearTimeout(rotateTimer); setPlayerOverlay(`${PARSER_LINES[parserIdx].name} 加载完成`, false); });
     frame.addEventListener('error', () => tryNextParser());
   }
 }
@@ -331,58 +273,32 @@ function playInIframe(rawUrl, parserIdx = 0) {
 function tryNextParser() {
   clearTimeout(rotateTimer);
   if (!currentRawUrl) return;
-
   let nextIdx = -1;
   for (let i = 0; i < PARSER_LINES.length; i++) {
     const idx = (currentParserIdx + 1 + i) % PARSER_LINES.length;
     if (!triedParsers.has(idx)) { nextIdx = idx; break; }
   }
-
-  if (nextIdx === -1) {
-    setPlayerOverlay('所有线路均已尝试，请手动选择', false);
-    showToast('所有播放线路均已尝试', 'error');
-    return;
-  }
-
-  showToast(`${PARSER_LINES[currentParserIdx].name} 加载超时，自动切换到 ${PARSER_LINES[nextIdx].name}`, 'info');
+  if (nextIdx === -1) { setPlayerOverlay('所有线路均已尝试，请手动选择', false); showToast('所有播放线路均已尝试', 'error'); return; }
+  showToast(`自动切换到 ${PARSER_LINES[nextIdx].name}`, 'info');
   playInIframe(currentRawUrl, nextIdx);
 }
 
-function switchParser(idx) {
-  clearRotate();
-  playMode = 'iframe';
-  updateModeButtons();
-  playInIframe(currentRawUrl, idx);
-}
+function switchParser(idx) { clearRotate(); playMode = 'iframe'; updateModeButtons(); playInIframe(currentRawUrl, idx); }
 
-// ==================== SMART PLAY (auto mode) ====================
 async function smartPlay(url) {
   currentRawUrl = url;
   const wrap = $('playerInner');
   if (!wrap) return;
-
-  const isM3u8 = url.includes('.m3u8');
-
-  if (playMode === 'iframe' || !isM3u8) {
-    // Non-m3u8 or user forced iframe
-    clearRotate();
-    playInIframe(url, 0);
-    return;
-  }
-
-  // Try DPlayer first for m3u8
+  if (playMode === 'iframe' || !url.includes('.m3u8')) { clearRotate(); playInIframe(url, 0); return; }
   wrap.innerHTML = '<div id="dplayerBox" style="width:100%;height:100%"></div>';
-  setPlayerOverlay('正在使用 DPlayer 直连播放…', true);
-
+  setPlayerOverlay('DPlayer 直连播放中…', true);
   try {
     await playWithDPlayer(url, $('dplayerBox'));
-    setPlayerOverlay('DPlayer 直连播放中', false);
-    showToast('m3u8 直连播放成功', 'success');
+    setPlayerOverlay('DPlayer 播放中', false);
+    showToast('直连播放成功', 'success');
   } catch {
-    // Fallback to iframe
-    showToast('直连失败，自动切换到解析播放', 'info');
-    clearRotate();
-    playInIframe(url, 0);
+    showToast('直连失败，切换解析播放', 'info');
+    clearRotate(); playInIframe(url, 0);
   }
 }
 
@@ -392,183 +308,201 @@ function updateModeButtons() {
     b.classList.toggle('btn-secondary', b.dataset.mode !== playMode);
   });
 }
-
 function setPlayMode(mode) {
-  playMode = mode;
-  updateModeButtons();
-  if (currentRawUrl) {
-    destroyDPlayer();
-    clearRotate();
-    if (mode === 'dplayer' && currentRawUrl.includes('.m3u8')) {
-      const wrap = $('playerInner');
-      if (wrap) {
-        wrap.innerHTML = '<div id="dplayerBox" style="width:100%;height:100%"></div>';
-        playWithDPlayer(currentRawUrl, $('dplayerBox')).catch(() => {
-          showToast('DPlayer 播放失败', 'error');
-        });
-      }
-    } else if (mode === 'iframe') {
-      playInIframe(currentRawUrl, currentParserIdx);
-    } else {
-      smartPlay(currentRawUrl);
-    }
-  }
+  playMode = mode; updateModeButtons();
+  if (currentRawUrl) { destroyDPlayer(); clearRotate(); smartPlay(currentRawUrl); }
 }
 
 function renderPlayer() {
   return `
     <div class="player-wrap glass">
-      <div class="player-inner" id="playerInner">
-        <div class="player-empty">点击选集开始播放</div>
-      </div>
-      <div class="player-overlay" id="playerOverlay">
-        <div class="line-info"></div>
-      </div>
+      <div class="player-inner" id="playerInner"><div class="player-empty">点击选集开始播放</div></div>
+      <div class="player-overlay" id="playerOverlay"><div class="line-info"></div></div>
     </div>
     <div class="glass" style="border-radius:var(--radius);padding:10px;margin-bottom:10px">
       <div class="play-mode-tabs">
-        <span class="label" style="font-size:11px;color:var(--muted-fg);white-space:nowrap;padding:4px 0">播放模式：</span>
+        <span class="label" style="font-size:11px;color:var(--muted-fg);padding:4px 0">播放模式：</span>
         <button class="btn btn-xs mode-btn btn-active" data-mode="auto" onclick="setPlayMode('auto')">智能</button>
-        <button class="btn btn-xs mode-btn btn-secondary" data-mode="dplayer" onclick="setPlayMode('dplayer')">DPlayer直连</button>
-        <button class="btn btn-xs mode-btn btn-secondary" data-mode="iframe" onclick="setPlayMode('iframe')">解析播放</button>
+        <button class="btn btn-xs mode-btn btn-secondary" data-mode="dplayer" onclick="setPlayMode('dplayer')">DPlayer</button>
+        <button class="btn btn-xs mode-btn btn-secondary" data-mode="iframe" onclick="setPlayMode('iframe')">解析</button>
       </div>
       <div class="line-row scrollbar-hide" id="parserBtns">
         <span class="label">解析线路：</span>
-        ${PARSER_LINES.map((l, i) => `<button class="btn btn-xs ${i === 0 ? 'btn-active' : 'btn-secondary'}" onclick="switchParser(${i})">${l.name}</button>`).join('')}
+        ${PARSER_LINES.map((l, i) => `<button class="btn btn-xs pbtn ${i === 0 ? 'btn-active' : 'btn-secondary'}" onclick="switchParser(${i})">${l.name}</button>`).join('')}
       </div>
     </div>`;
 }
 
-// ==================== HOME ====================
-const CATEGORIES = [
-  { title: '🔥 正在热映', fn: () => tmdbFetch('/movie/now_playing') },
-  { title: '🎬 热门电影', fn: () => tmdbFetch('/movie/popular') },
-  { title: '📺 热门剧集', fn: () => tmdbFetch('/tv/popular') },
-  { title: '🎌 日本动漫', fn: () => tmdbFetch('/discover/tv', { with_genres: '16', with_original_language: 'ja', sort_by: 'popularity.desc' }) },
-  { title: '🐉 国漫精选', fn: () => tmdbFetch('/discover/tv', { with_genres: '16', with_original_language: 'zh', sort_by: 'popularity.desc' }) },
-  { title: '⭐ 高分电影', fn: () => tmdbFetch('/movie/top_rated') },
-];
+// ==================== 首页 ====================
+let currentCat = 0;
 
 async function showHome() {
   keywordEl.value = '';
-  clearRotate();
-  destroyDPlayer();
-  app.innerHTML = `
-    <div class="banner glass" style="border-radius:var(--radius)">
-      <h2 class="text-gradient">JIE影视4K</h2>
-      <p>免费在线观看 · 高清4K · 无广告 · 电影 · 电视剧 · 动漫</p>
+  clearRotate(); destroyDPlayer();
+  currentCat = 0;
+
+  let html = `
+    <div class="banner glass"><h2 class="text-gradient">JIE影视4K</h2>
+      <p>免费在线观看 · 高清4K · 无广告 · 全网资源 · 无需会员</p>
       <div class="credits"><span>APP开发者：杰同学🐾</span><span>桂ICP备202602110908号</span></div>
     </div>
-    <div id="cats">加载中…</div>`;
-
-  const catsEl = $('cats');
-  const results = await Promise.allSettled(CATEGORIES.map(c => c.fn()));
-  let html = '';
-  results.forEach((r, i) => {
-    if (r.status !== 'fulfilled') return;
-    const items = (r.value.results || []).slice(0, 12);
-    if (!items.length) return;
-    html += `<section class="cat-section"><h3>${CATEGORIES[i].title}</h3><div class="cat-grid">`;
-    items.forEach(item => {
-      const t = (item.title || item.name || '未知').replace(/'/g, '&#39;');
-      const mt = item.media_type || (item.title ? 'movie' : 'tv');
-      const poster = imgUrl(item.poster_path, 'w342');
-      const score = item.vote_average ? item.vote_average.toFixed(1) : '';
-      html += `<div class="cat-card glass" onclick="showDetail('${mt}',${item.id})">
-        ${poster ? `<img src="${poster}" alt="${t}" loading="lazy" onerror="this.style.display='none'"/>` : '<div style="aspect-ratio:2/3;background:var(--muted)"></div>'}
-        <div class="info">${t} <span class="score">${score ? '⭐'+score : ''}</span></div>
-      </div>`;
-    });
-    html += '</div></section>';
-  });
-  catsEl.innerHTML = html || '<p style="color:var(--muted-fg)">加载分类失败</p>';
+    <div class="nav-tabs scrollbar-hide" id="catTabs">
+      ${CATEGORIES.map((c, i) => `<button class="btn btn-sm ${i === 0 ? 'btn-active' : 'btn-secondary'}" onclick="loadCategory(${i})">${c.title}</button>`).join('')}
+    </div>
+    <div id="catContent">加载中…</div>
+    <div id="catPagination"></div>`;
+  app.innerHTML = html;
+  loadCategory(0);
 }
 
-// ==================== DETAIL ====================
-async function showDetail(mediaType, id) {
+async function loadCategory(catIdx, page = 1) {
+  currentCat = catIdx;
+  const cat = CATEGORIES[catIdx];
+  // Update tabs
+  document.querySelectorAll('#catTabs .btn').forEach((b, i) => {
+    b.classList.toggle('btn-active', i === catIdx);
+    b.classList.toggle('btn-secondary', i !== catIdx);
+  });
+  const content = $('catContent');
+  content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted-fg)">加载中…</div>';
+
+  try {
+    const params = cat.id === 0 ? `?ac=detail&pg=${page}` : `?ac=detail&t=${cat.id}&pg=${page}`;
+    const data = await apiFetch(PRIMARY_API, params);
+    const items = data?.list || [];
+    const totalPage = data?.pagecount || 1;
+
+    if (!items.length) {
+      content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted-fg)">暂无内容</div>';
+      return;
+    }
+
+    let html = '<div class="cat-grid">';
+    items.forEach(item => {
+      const pic = item.vod_pic || '';
+      const name = (item.vod_name || '未知').replace(/'/g, '&#39;');
+      const remark = item.vod_remarks || '';
+      html += `<div class="cat-card glass" onclick="showDetail(${item.vod_id})">
+        ${pic ? `<img src="${pic}" alt="${name}" loading="lazy" onerror="this.style.background='var(--muted)';this.style.minHeight='180px'"/>` : '<div style="aspect-ratio:2/3;background:var(--muted)"></div>'}
+        <div class="info"><div class="title">${name}</div><div class="sub">${remark}</div></div>
+      </div>`;
+    });
+    html += '</div>';
+    content.innerHTML = html;
+
+    // Pagination
+    let pgHtml = '';
+    if (totalPage > 1) {
+      pgHtml = '<div class="pagination">';
+      if (page > 1) pgHtml += `<button class="btn btn-xs btn-secondary" onclick="loadCategory(${catIdx},${page - 1})">上一页</button>`;
+      pgHtml += `<span style="font-size:12px;color:var(--muted-fg);padding:4px 8px">${page} / ${totalPage}</span>`;
+      if (page < totalPage) pgHtml += `<button class="btn btn-xs btn-secondary" onclick="loadCategory(${catIdx},${page + 1})">下一页</button>`;
+      pgHtml += '</div>';
+    }
+    $('catPagination').innerHTML = pgHtml;
+  } catch (e) {
+    content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--destructive)">加载失败，请重试</div>`;
+  }
+}
+
+// ==================== 详情页 ====================
+let cachedSources = [];
+let activeSource = 0, activeEp = 0;
+
+async function showDetail(vodId) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  clearRotate();
-  destroyDPlayer();
+  clearRotate(); destroyDPlayer();
+  cachedSources = []; activeSource = 0; activeEp = 0;
   app.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted-fg)">加载详情中…</div>';
 
   try {
-    const detail = mediaType === 'movie' ? await tmdbFetch(`/movie/${id}`) : await tmdbFetch(`/tv/${id}`);
-    const title = (detail.title || detail.name || '未知').replace(/'/g, '&#39;');
-    const year = (detail.release_date || detail.first_air_date || '').slice(0, 4);
-    const genres = (detail.genres || []).map(g => g.name).join(' / ');
-    const poster = imgUrl(detail.poster_path, 'w342');
+    // 尝试从所有API获取详情
+    let detail = null;
+    for (const api of VOD_APIS) {
+      try {
+        const data = await apiFetch(api.url, `?ac=detail&ids=${vodId}`);
+        if (data?.list?.[0]) { detail = data.list[0]; break; }
+      } catch {}
+    }
+
+    if (!detail) { app.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted-fg)">未找到该影视</div>'; return; }
+
+    const name = (detail.vod_name || '未知').replace(/'/g, '&#39;');
+    const pic = detail.vod_pic || '';
+    const year = detail.vod_year || '';
+    const area = detail.vod_area || '';
+    const type = detail.type_name || '';
+    const remarks = detail.vod_remarks || '';
+    const desc = (detail.vod_content || '').replace(/<[^>]+>/g, '');
+    const actor = detail.vod_actor || '';
+    const director = detail.vod_director || '';
+
+    const sources = parsePlayUrls(detail.vod_play_url, detail.vod_play_from);
+    cachedSources = sources;
 
     app.innerHTML = `
       <div class="detail-hero">
-        <div class="detail-poster">${poster ? `<img src="${poster}" alt="${title}" onerror="this.style.display='none'"/>` : ''}</div>
+        <div class="detail-poster">${pic ? `<img src="${pic}" alt="${name}" onerror="this.style.background='var(--muted)'"/>` : '<div style="aspect-ratio:2/3;background:var(--muted);border-radius:var(--radius);width:100%"></div>'}</div>
         <div class="detail-meta">
-          <h2>${title}</h2>
+          <h2>${name}</h2>
           <div class="tags">
-            ${genres ? `<span>🎬 ${genres}</span>` : ''}
+            ${type ? `<span>🎬 ${type}</span>` : ''}
             ${year ? `<span>📅 ${year}</span>` : ''}
-            ${detail.vote_average ? `<span>⭐ ${detail.vote_average.toFixed(1)}</span>` : ''}
+            ${area ? `<span>📍 ${area}</span>` : ''}
+            ${remarks ? `<span>📌 ${remarks}</span>` : ''}
           </div>
-          ${detail.overview ? `<p class="overview">${detail.overview}</p>` : ''}
+          ${director ? `<p style="font-size:12px;color:var(--muted-fg);margin-bottom:4px">导演：${director}</p>` : ''}
+          ${actor ? `<p style="font-size:12px;color:var(--muted-fg);margin-bottom:8px">主演：${actor.slice(0,80)}${actor.length>80?'…':''}</p>` : ''}
+          ${desc ? `<p class="overview">${desc}</p>` : ''}
           <button class="btn btn-primary glow" style="margin-top:14px" onclick="startPlay()">▶ 立即播放</button>
-          <div id="vodStatus" class="status" style="margin-top:6px"></div>
+          <p style="font-size:11px;color:var(--success);margin-top:6px">${sources.length ? `✅ 已找到 ${sources.reduce((a,s)=>a+s.urls.length,0)} 个播放资源` : ''}</p>
         </div>
       </div>
       <div id="playerArea"></div>
-      <div id="vodSources"></div>`;
+      <div id="vodSources"></div>
+      <div style="margin-top:16px"><button class="btn btn-secondary" onclick="searchMore('${name}')">🔍 搜索更多源</button></div>`;
 
-    searchVodSources(title.replace(/&#39;/g, "'"), year);
+    if (sources.length) renderVodSources();
   } catch (e) {
     app.innerHTML = `<div style="text-align:center;padding:60px;color:var(--destructive)">加载失败: ${e.message}</div>`;
   }
 }
 
-let cachedVodSources = [];
-let activeVodSource = 0;
-let activeVodEp = 0;
+async function searchMore(title) {
+  showToast('正在搜索更多资源…', 'info');
+  const results = await vodSearchAll(title);
+  if (!results.length) { showToast('未找到更多资源', 'error'); return; }
 
-async function searchVodSources(title, year) {
-  const statusEl = $('vodStatus');
-  if (statusEl) statusEl.textContent = '正在搜索播放资源…';
-
-  const cleaned = title.replace(/[：:（(].*?[）)]/g, '').replace(/\s+/g, ' ').trim();
-  const candidates = [...new Set([title.trim(), cleaned, year ? `${cleaned} ${year}` : ''].filter(Boolean))];
-
-  for (const kw of candidates) {
-    const results = await vodSearch(kw);
-    if (!results.length) continue;
-    const match = results.find(r => r.vod_name.includes(kw) || kw.includes(r.vod_name)) || results[0];
-    const sources = parsePlayUrls(match.vod_play_url, match.vod_play_from);
-    if (sources.length && sources[0]?.urls[0]?.url) {
-      cachedVodSources = sources;
-      activeVodSource = 0;
-      activeVodEp = 0;
-      const total = sources.reduce((a, s) => a + s.urls.length, 0);
-      if (statusEl) statusEl.innerHTML = `<span style="color:var(--success)">✅ 已找到 ${total} 个播放资源</span>`;
-      renderVodSources();
-      return;
-    }
+  // Merge sources
+  let newSources = [];
+  for (const item of results) {
+    const s = parsePlayUrls(item.vod_play_url, item.vod_play_from);
+    s.forEach(src => { src.name = `${item._source} - ${src.name}`; });
+    newSources.push(...s);
   }
-  cachedVodSources = [];
-  if (statusEl) statusEl.innerHTML = '<span style="color:var(--destructive)">未找到可播放资源，请换关键词搜索</span>';
+  if (newSources.length) {
+    cachedSources = [...cachedSources, ...newSources];
+    renderVodSources();
+    showToast(`找到 ${newSources.reduce((a,s)=>a+s.urls.length,0)} 个额外资源`, 'success');
+  }
 }
 
 function renderVodSources() {
   const el = $('vodSources');
-  if (!el || !cachedVodSources.length) return;
-
+  if (!el || !cachedSources.length) return;
   let html = '<div class="glass" style="border-radius:var(--radius);padding:12px;margin-top:12px">';
-  if (cachedVodSources.length > 1) {
+  if (cachedSources.length > 1) {
     html += '<div class="line-row scrollbar-hide" style="margin-bottom:8px"><span class="label">资源线路：</span>';
-    cachedVodSources.forEach((s, i) => {
-      html += `<button class="btn btn-xs ${i === activeVodSource ? 'btn-active' : 'btn-secondary'}" onclick="switchVodSource(${i})">${s.name || '线路'+(i+1)}</button>`;
+    cachedSources.forEach((s, i) => {
+      html += `<button class="btn btn-xs ${i === activeSource ? 'btn-active' : 'btn-secondary'}" onclick="switchSource(${i})">${s.name || '线路'+(i+1)}</button>`;
     });
     html += '</div>';
   }
-  const eps = cachedVodSources[activeVodSource]?.urls || [];
+  const eps = cachedSources[activeSource]?.urls || [];
   if (eps.length > 0) {
-    html += '<p style="font-size:11px;color:var(--muted-fg);margin-bottom:6px">选集：</p><div class="ep-grid scrollbar-hide">';
+    html += `<p style="font-size:11px;color:var(--muted-fg);margin-bottom:6px">选集 (共${eps.length}集)：</p><div class="ep-grid scrollbar-hide">`;
     eps.forEach((ep, i) => {
-      html += `<button class="btn btn-xs ${i === activeVodEp ? 'btn-active' : 'btn-secondary'}" onclick="playEp(${activeVodSource},${i})">${ep.label}</button>`;
+      html += `<button class="btn btn-xs ${i === activeEp ? 'btn-active' : 'btn-secondary'}" onclick="playEp(${activeSource},${i})">${ep.label}</button>`;
     });
     html += '</div>';
   }
@@ -576,105 +510,62 @@ function renderVodSources() {
   el.innerHTML = html;
 }
 
-function switchVodSource(idx) {
-  activeVodSource = idx; activeVodEp = 0;
-  renderVodSources();
-  const url = cachedVodSources[idx]?.urls[0]?.url;
+function switchSource(idx) {
+  activeSource = idx; activeEp = 0; renderVodSources();
+  const url = cachedSources[idx]?.urls[0]?.url;
   if (url) { ensurePlayer(); clearRotate(); smartPlay(url); }
 }
 
 function playEp(srcIdx, epIdx) {
-  activeVodSource = srcIdx; activeVodEp = epIdx;
-  renderVodSources();
-  const url = cachedVodSources[srcIdx]?.urls[epIdx]?.url;
+  activeSource = srcIdx; activeEp = epIdx; renderVodSources();
+  const url = cachedSources[srcIdx]?.urls[epIdx]?.url;
   if (url) { ensurePlayer(); clearRotate(); smartPlay(url); }
 }
 
 function ensurePlayer() {
   const area = $('playerArea');
-  if (!area) return;
-  if (!$('playerInner')) area.innerHTML = renderPlayer();
+  if (area && !$('playerInner')) area.innerHTML = renderPlayer();
 }
 
 function startPlay() {
   ensurePlayer();
-  if (cachedVodSources.length && cachedVodSources[activeVodSource]?.urls[activeVodEp]?.url) {
-    clearRotate();
-    smartPlay(cachedVodSources[activeVodSource].urls[activeVodEp].url);
-  } else {
-    showToast('暂无播放资源，请等待搜索完成', 'error');
-  }
+  if (cachedSources.length && cachedSources[activeSource]?.urls[activeEp]?.url) {
+    clearRotate(); smartPlay(cachedSources[activeSource].urls[activeEp].url);
+  } else { showToast('暂无播放资源', 'error'); }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ==================== SEARCH ====================
+// ==================== 搜索 ====================
 async function doSearch() {
   const kw = keywordEl.value.trim();
   if (!kw) return;
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  clearRotate();
-  destroyDPlayer();
+  clearRotate(); destroyDPlayer();
   app.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted-fg)">搜索中…</div>';
 
   try {
-    const [tmdbRes, vodRes] = await Promise.allSettled([
-      tmdbFetch('/search/multi', { query: kw }),
-      vodSearch(kw),
-    ]);
-
-    const tmdbItems = tmdbRes.status === 'fulfilled' ? (tmdbRes.value.results || []).filter(v => v.poster_path).slice(0, 12) : [];
-    const vodItems = vodRes.status === 'fulfilled' ? vodRes.value.slice(0, 15) : [];
-
-    let html = '<div id="searchPlayerArea"></div>';
-
-    if (tmdbItems.length) {
-      html += `<section class="cat-section"><h3>🔍 TMDB 搜索结果</h3><div class="cat-grid">`;
-      tmdbItems.forEach(item => {
-        const t = (item.title || item.name || '未知').replace(/'/g, '&#39;');
-        const mt = item.media_type || (item.title ? 'movie' : 'tv');
-        html += `<div class="cat-card glass" onclick="showDetail('${mt}',${item.id})">
-          <img src="${imgUrl(item.poster_path,'w342')}" alt="${t}" loading="lazy" onerror="this.style.display='none'"/>
-          <div class="info">${t}</div></div>`;
-      });
-      html += '</div></section>';
+    const items = await vodSearchAll(kw);
+    if (!items.length) {
+      app.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted-fg)">未找到任何结果，换个关键词试试</div>';
+      return;
     }
 
-    if (vodItems.length) {
-      html += '<section class="cat-section"><h3>🎬 可直接播放</h3><div class="results">';
-      vodItems.forEach(item => {
-        const sources = parsePlayUrls(item.vod_play_url, item.vod_play_from);
-        const firstEps = sources[0]?.urls.slice(0, 20) || [];
-        html += `<div class="result-item glass">
-          ${item.vod_pic ? `<img src="${item.vod_pic}" onerror="this.style.display='none'" loading="lazy"/>` : ''}
-          <div class="result-info">
-            <h3>${item.vod_name}</h3>
-            <p>${item.type_name || ''} · ${item.vod_remarks || ''}</p>
-            <div class="ep-btns">
-              ${firstEps.length ? firstEps.map((ep, i) =>
-                `<button class="btn btn-xs btn-secondary" onclick="playDirect(this,'${ep.url.replace(/'/g,'')}')">${ep.label}</button>`
-              ).join('') : '<span style="font-size:11px;color:var(--muted-fg)">暂无选集</span>'}
-            </div>
-          </div>
-        </div>`;
-      });
-      html += '</div></section>';
-    }
-
-    if (!tmdbItems.length && !vodItems.length) html += '<div style="text-align:center;padding:40px;color:var(--muted-fg)">未找到任何结果</div>';
-
+    let html = '<div id="searchPlayerArea"></div><section class="cat-section"><h3>🔍 搜索结果</h3><div class="cat-grid">';
+    items.forEach(item => {
+      const pic = item.vod_pic || '';
+      const name = (item.vod_name || '未知').replace(/'/g, '&#39;');
+      const remark = item.vod_remarks || '';
+      const src = item._source || '';
+      html += `<div class="cat-card glass" onclick="showDetail(${item.vod_id})">
+        ${pic ? `<img src="${pic}" alt="${name}" loading="lazy" onerror="this.style.background='var(--muted)';this.style.minHeight='180px'"/>` : '<div style="aspect-ratio:2/3;background:var(--muted)"></div>'}
+        <div class="info"><div class="title">${name}</div><div class="sub">${remark} · ${src}</div></div>
+      </div>`;
+    });
+    html += '</div></section>';
     app.innerHTML = html;
   } catch (e) {
     app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--destructive)">搜索失败: ${e}</div>`;
   }
-}
-
-function playDirect(btnEl, url) {
-  let area = $('searchPlayerArea') || $('playerArea');
-  if (!area) { app.insertAdjacentHTML('afterbegin', '<div id="searchPlayerArea"></div>'); area = $('searchPlayerArea'); }
-  if (!area.querySelector('#playerInner')) area.innerHTML = renderPlayer();
-  clearRotate();
-  smartPlay(url);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ==================== INIT ====================
