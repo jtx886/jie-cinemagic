@@ -19,9 +19,10 @@ import HlsPlayer from '@/components/HlsPlayer';
 import { Loader2, Calendar, MapPin, Star, Clapperboard, Play } from 'lucide-react';
 
 const PARSER_LINES = [
-  { name: '解析1', base: 'https://jx.xmflv.com/?url=' },
-  { name: '解析2', base: 'https://jx.bozrc.com:4433/player/?url=' },
-  { name: '解析3', base: 'https://www.yemu.xyz/?url=' },
+  { name: '线路1', base: 'https://jx.xmflv.com/?url=' },
+  { name: '线路2', base: 'https://jx.bozrc.com:4433/player/?url=' },
+  { name: '线路3', base: 'https://www.yemu.xyz/?url=' },
+  { name: '线路4', base: 'https://jx.m3u8.tv/jiexi/?url=' },
 ];
 
 const isM3u8Url = (url: string) => url.includes('.m3u8');
@@ -164,7 +165,8 @@ export default function DetailPage() {
   };
 
   const iframeUrl = currentUrl ? `${PARSER_LINES[activeParser].base}${encodeURIComponent(currentUrl)}` : '';
-  const shouldUseIframe = forceIframe || (!!currentUrl && !isM3u8Url(currentUrl));
+  // Always use iframe parsing - it's the most reliable method
+  const shouldUseIframe = true;
 
   if (loading) {
     return (
@@ -251,7 +253,7 @@ export default function DetailPage() {
               {currentUrl && (
                 <div className="glass rounded-2xl p-3">
                   <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-                    <span className="text-xs text-muted-foreground shrink-0 py-1">解析：</span>
+                    <span className="text-xs text-muted-foreground shrink-0 py-1">播放线路：</span>
                     {PARSER_LINES.map((line, i) => (
                       <button
                         key={line.name}

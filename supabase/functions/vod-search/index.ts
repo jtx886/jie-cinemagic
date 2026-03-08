@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const VOD_API = "https://api.ffzyapi.com/api.php/provide/vod/";
+const VOD_APIS = [
+  "https://api.ffzyapi.com/api.php/provide/vod/",
+  "https://api.1080p.one/api.php/provide/vod/",
+  "https://api.xinlangapi.com/xinlangapi.php/provide/vod/",
+];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,20 +25,42 @@ serve(async (req) => {
       });
     }
 
-    const url = `${VOD_API}?ac=detail&wd=${encodeURIComponent(keyword.trim().slice(0, 80))}`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
+    const safeKw = encodeURIComponent(keyword.trim().slice(0, 80));
+    const allResults: any[] = [];
+
+    // Query all APIs in parallel
+    const promises = VOD_APIS.map(async (api) => {
+      try {
+        const url = `${api}?ac=detail&wd=${safeKw}`;
+        const res = await fetch(url, {
+          headers: { "User-Agent": "Mozilla/5.0" },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data?.list || [];
+      } catch {
+        return [];
+      }
     });
 
-    if (!res.ok) {
-      return new Response(JSON.stringify({ error: "upstream error" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const results = await Promise.allSettled(promises);
+    for (const r of results) {
+      if (r.status === "fulfilled" && Array.isArray(r.value)) {
+        allResults.push(...r.value);
+      }
     }
 
-    const data = await res.json();
-    return new Response(JSON.stringify(data), {
+    // Deduplicate by vod_name
+    const seen = new Set<string>();
+    const deduped = allResults.filter((item) => {
+      const key = item.vod_name;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return new Response(JSON.stringify({ code: 1, list: deduped }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
