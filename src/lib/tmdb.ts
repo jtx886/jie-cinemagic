@@ -119,37 +119,19 @@ interface VodResponse {
   list: VodItem[];
 }
 
-async function fetchWithTimeout(url: string, timeout = 8000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeout);
-  try {
-    return await fetch(url, { signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function fetchVodViaProxy(apiUrl: string): Promise<VodResponse | null> {
-  for (const buildProxyUrl of CORS_PROXIES) {
-    try {
-      const res = await fetchWithTimeout(buildProxyUrl(apiUrl));
-      if (!res.ok) continue;
-      const data = (await res.json()) as VodResponse;
-      if (data?.list) return data;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
 export async function searchVod(keyword: string): Promise<VodItem[]> {
   const safeKeyword = keyword.trim().slice(0, 80);
   if (!safeKeyword) return [];
 
-  const url = `${VOD_API}?ac=detail&wd=${encodeURIComponent(safeKeyword)}`;
-  const data = await fetchVodViaProxy(url);
-  return data?.list || [];
+  try {
+    const { data, error } = await supabase.functions.invoke('vod-search', {
+      body: { keyword: safeKeyword },
+    });
+    if (error) throw error;
+    return data?.list || [];
+  } catch {
+    return [];
+  }
 }
 
 export function buildVodQueryCandidates(title: string, year?: string) {
