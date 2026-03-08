@@ -1,29 +1,392 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>JIE影视4K</title>
-    <meta name="description" content="JIE影视4K - 免费在线观看高清电影、电视剧、动漫，无广告，支持4K高清播放">
-    <meta name="author" content="杰同学🐾" />
+    <title>JIE影视4K - 纯HTML版播放器</title>
+    <meta name="description" content="JIE影视4K 纯HTML版，支持多源搜索、选集播放、自动线路切换。" />
+    <style>
+      :root {
+        --background: 220 20% 6%;
+        --foreground: 210 20% 92%;
+        --card: 220 18% 10%;
+        --muted: 220 15% 14%;
+        --muted-foreground: 215 12% 60%;
+        --primary: 190 80% 50%;
+        --destructive: 0 72% 51%;
+        --border: 220 15% 22%;
+      }
 
-    
-    
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8714192d-fe9c-494f-b15e-567eda6153a5/id-preview-83dca28c--9d0d0154-1ebe-462e-bad3-87b09cb1a775.lovable.app-1773002671502.png">
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Noto Sans SC", system-ui, -apple-system, Segoe UI, sans-serif;
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+      }
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8714192d-fe9c-494f-b15e-567eda6153a5/id-preview-83dca28c--9d0d0154-1ebe-462e-bad3-87b09cb1a775.lovable.app-1773002671502.png">
-    <meta property="og:title" content="JIE影视4K">
-  <meta name="twitter:title" content="JIE影视4K">
-  <meta property="og:description" content="JIE影视4K - 免费在线观看高清电影、电视剧、动漫，无广告，支持4K高清播放">
-  <meta name="twitter:description" content="JIE影视4K - 免费在线观看高清电影、电视剧、动漫，无广告，支持4K高清播放">
-</head>
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+      }
 
+      .title {
+        margin: 0 0 14px;
+        font-size: clamp(24px, 3vw, 36px);
+        line-height: 1.15;
+        letter-spacing: .5px;
+      }
+
+      .sub {
+        margin: 0 0 22px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .card {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 16px;
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      input, button, select {
+        border-radius: 10px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      input { flex: 1; min-width: 220px; }
+
+      button {
+        cursor: pointer;
+        background: hsl(var(--primary));
+        color: hsl(var(--background));
+        font-weight: 700;
+      }
+
+      button:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+      }
+
+      .status {
+        font-size: 13px;
+        margin-top: 10px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .status.error { color: hsl(var(--destructive)); }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .item {
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        padding: 10px;
+        background: hsl(var(--muted));
+      }
+
+      .item h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
+
+      .item p {
+        margin: 0;
+        font-size: 13px;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .episodes {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .episodes button {
+        background: transparent;
+        border-color: hsl(var(--border));
+        color: hsl(var(--foreground));
+        font-weight: 500;
+      }
+
+      .episodes button.active {
+        background: hsl(var(--primary));
+        color: hsl(var(--background));
+        border-color: hsl(var(--primary));
+      }
+
+      .player {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border: 1px solid hsl(var(--border));
+        border-radius: 14px;
+        overflow: hidden;
+        background: #000;
+      }
+
+      video, iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      @media (max-width: 640px) {
+        .wrap { padding: 14px; }
+      }
+    </style>
+  </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="wrap">
+      <h1 class="title">JIE影视4K · 纯HTML播放器</h1>
+      <p class="sub">优先直连播放，失败自动切换解析线路（囧次元风格多线路）。</p>
+
+      <section class="card">
+        <div class="row">
+          <input id="keyword" placeholder="输入片名搜索，如：凡人修仙传" />
+          <button id="searchBtn">搜索</button>
+        </div>
+        <div id="searchStatus" class="status">请输入关键词后点击搜索。</div>
+      </section>
+
+      <section class="card">
+        <div class="row" style="margin-bottom:10px">
+          <select id="lineSelect"></select>
+          <button id="switchLineBtn">切换线路</button>
+        </div>
+        <div class="player" id="playerWrap">
+          <video id="video" controls playsinline webkit-playsinline></video>
+        </div>
+        <div id="playStatus" class="status">尚未开始播放。</div>
+      </section>
+
+      <section class="card">
+        <div id="results" class="grid"></div>
+      </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15/dist/hls.min.js"></script>
+    <script type="module">
+      const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vod-search`;
+      const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const PARSER_LINES = [
+        { name: '囧次元线路1', base: 'https://jx.playerjy.com/?url=' },
+        { name: '囧次元线路2', base: 'https://jx.m3u8.tv/jiexi/?url=' },
+        { name: '囧次元线路3', base: 'https://www.ckplayer.vip/jiexi/?url=' },
+        { name: '备用线路', base: 'https://jx.jsonplayer.com/player/?url=' }
+      ];
+
+      const keywordEl = document.getElementById('keyword');
+      const searchBtn = document.getElementById('searchBtn');
+      const searchStatus = document.getElementById('searchStatus');
+      const resultsEl = document.getElementById('results');
+      const playStatus = document.getElementById('playStatus');
+      const lineSelect = document.getElementById('lineSelect');
+      const switchLineBtn = document.getElementById('switchLineBtn');
+      const playerWrap = document.getElementById('playerWrap');
+
+      let hls = null;
+      let currentRawUrl = '';
+      let currentLine = 0;
+
+      for (let i = 0; i < PARSER_LINES.length; i++) {
+        const op = document.createElement('option');
+        op.value = String(i);
+        op.textContent = PARSER_LINES[i].name;
+        lineSelect.appendChild(op);
+      }
+
+      function setStatus(el, msg, isError = false) {
+        el.textContent = msg;
+        el.classList.toggle('error', isError);
+      }
+
+      function parsePlayUrls(playUrl = '', playFrom = '') {
+        const sources = String(playFrom).split('$$$');
+        const groups = String(playUrl).split('$$$');
+        return sources.map((name, i) => {
+          const eps = (groups[i] || '')
+            .split('#')
+            .filter(Boolean)
+            .map(ep => {
+              const [label, url] = ep.split('$');
+              return { label: label || '播放', url: url || '' };
+            })
+            .filter(v => v.url);
+          return { name: name || `线路${i + 1}`, urls: eps };
+        }).filter(v => v.urls.length);
+      }
+
+      function cleanupPlayer() {
+        if (hls) {
+          hls.destroy();
+          hls = null;
+        }
+        playerWrap.innerHTML = '';
+      }
+
+      function mountIframe(url) {
+        cleanupPlayer();
+        const iframe = document.createElement('iframe');
+        iframe.allow = 'autoplay; fullscreen';
+        iframe.referrerPolicy = 'no-referrer';
+        iframe.src = `${PARSER_LINES[currentLine].base}${encodeURIComponent(url)}`;
+        playerWrap.appendChild(iframe);
+      }
+
+      function playByDirectOrFallback(url) {
+        currentRawUrl = url;
+        cleanupPlayer();
+
+        const video = document.createElement('video');
+        video.controls = true;
+        video.playsInline = true;
+        video.autoplay = true;
+        playerWrap.appendChild(video);
+
+        const isM3u8 = /\.m3u8(\?|$)/i.test(url) || url.includes('/functions/v1/vod-stream');
+
+        const fallbackToIframe = () => {
+          setStatus(playStatus, '直连失败，已自动切换解析线路播放', false);
+          mountIframe(url);
+        };
+
+        video.addEventListener('error', fallbackToIframe, { once: true });
+
+        if (isM3u8 && window.Hls && window.Hls.isSupported()) {
+          hls = new window.Hls({
+            maxBufferLength: 20,
+            maxMaxBufferLength: 40,
+            fragLoadingTimeOut: 12000,
+            manifestLoadingTimeOut: 12000,
+          });
+          hls.loadSource(url);
+          hls.attachMedia(video);
+          hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+            setStatus(playStatus, '已使用直连线路播放', false);
+            video.play().catch(() => {});
+          });
+          hls.on(window.Hls.Events.ERROR, (_, data) => {
+            if (data?.fatal) fallbackToIframe();
+          });
+          return;
+        }
+
+        video.src = url;
+        video.play().then(() => {
+          setStatus(playStatus, '已使用直连线路播放', false);
+        }).catch(() => {
+          fallbackToIframe();
+        });
+      }
+
+      function renderResults(list) {
+        resultsEl.innerHTML = '';
+        if (!list.length) {
+          resultsEl.innerHTML = '<div class="item"><p>未找到可播放资源，请换关键词。</p></div>';
+          return;
+        }
+
+        list.slice(0, 15).forEach((item) => {
+          const block = document.createElement('div');
+          block.className = 'item';
+          block.innerHTML = `
+            <h3>${item.vod_name || '未知片名'}</h3>
+            <p>${item.type_name || '未知分类'} · ${item.vod_remarks || '暂无备注'}</p>
+            <div class="episodes"></div>
+          `;
+
+          const epWrap = block.querySelector('.episodes');
+          const sources = parsePlayUrls(item.vod_play_url, item.vod_play_from);
+          const firstSource = sources[0]?.urls || [];
+
+          if (!firstSource.length) {
+            const noBtn = document.createElement('span');
+            noBtn.textContent = '暂无可播放选集';
+            noBtn.style.color = 'hsl(var(--muted-foreground))';
+            epWrap.appendChild(noBtn);
+          } else {
+            firstSource.slice(0, 40).forEach((ep, idx) => {
+              const btn = document.createElement('button');
+              btn.textContent = ep.label || `第${idx + 1}集`;
+              btn.addEventListener('click', () => {
+                epWrap.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+                btn.classList.add('active');
+                playByDirectOrFallback(ep.url);
+              });
+              epWrap.appendChild(btn);
+            });
+          }
+
+          resultsEl.appendChild(block);
+        });
+      }
+
+      async function search() {
+        const keyword = keywordEl.value.trim().slice(0, 80);
+        if (!keyword) {
+          setStatus(searchStatus, '请输入搜索关键词', true);
+          return;
+        }
+
+        setStatus(searchStatus, '正在搜索可播放源…');
+        searchBtn.disabled = true;
+
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: API_KEY,
+            },
+            body: JSON.stringify({ keyword }),
+          });
+
+          if (!res.ok) throw new Error(`搜索失败: ${res.status}`);
+          const data = await res.json();
+          const list = Array.isArray(data?.list) ? data.list : [];
+          setStatus(searchStatus, `搜索完成，共 ${list.length} 条资源`);
+          renderResults(list);
+        } catch (e) {
+          setStatus(searchStatus, `搜索失败：${String(e)}`, true);
+          renderResults([]);
+        } finally {
+          searchBtn.disabled = false;
+        }
+      }
+
+      searchBtn.addEventListener('click', search);
+      keywordEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') search();
+      });
+
+      switchLineBtn.addEventListener('click', () => {
+        currentLine = Number(lineSelect.value || 0);
+        if (!currentRawUrl) {
+          setStatus(playStatus, '请先选择一个可播放选集');
+          return;
+        }
+        mountIframe(currentRawUrl);
+        setStatus(playStatus, `已切换到 ${PARSER_LINES[currentLine].name}`);
+      });
+    </script>
   </body>
 </html>
+
