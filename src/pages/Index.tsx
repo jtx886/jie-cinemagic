@@ -63,7 +63,8 @@ export default function Index() {
         </main>
 
         <footer className="glass-strong py-6 text-center text-xs text-muted-foreground">
-          <p>JIE影视4K © 2026 杰同学🐾</p>
+          <p>JIE影视4K © 2026</p>
+          <p className="mt-1">APP开发者：杰同学🐾</p>
           <p className="mt-1">备案号：桂ICP备202602110908号</p>
           <p className="mt-1">本站资源均来自互联网，仅供学习交流使用</p>
         </footer>
