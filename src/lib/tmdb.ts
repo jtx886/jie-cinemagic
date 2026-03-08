@@ -2,6 +2,10 @@ const TMDB_API_KEY = 'cb44223c5dee5676ed3a839f42ed27e3';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
 
+// CORS proxy for Chinese video APIs
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+const VOD_API = 'https://api.ffzyapi.com/api.php/provide/vod/';
+
 export const getImageUrl = (path: string | null, size = 'w500') => {
   if (!path) return '/placeholder.svg';
   return `${IMG_BASE}/${size}${path}`;
@@ -12,46 +16,7 @@ export const getBackdropUrl = (path: string | null) => {
   return `${IMG_BASE}/w1280${path}`;
 };
 
-// Multiple embed player sources for fallback
-export const PLAYER_SOURCES = [
-  {
-    name: '线路1',
-    getUrl: (id: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
-      if (type === 'tv' && season && episode) {
-        return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
-      }
-      return `https://vidsrc.to/embed/${type}/${id}`;
-    },
-  },
-  {
-    name: '线路2',
-    getUrl: (id: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
-      if (type === 'tv' && season && episode) {
-        return `https://vidsrc.xyz/embed/tv/${id}/${season}/${episode}`;
-      }
-      return `https://vidsrc.xyz/embed/${type}/${id}`;
-    },
-  },
-  {
-    name: '线路3',
-    getUrl: (id: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
-      if (type === 'tv' && season && episode) {
-        return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
-      }
-      return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
-    },
-  },
-  {
-    name: '线路4',
-    getUrl: (id: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
-      if (type === 'tv' && season && episode) {
-        return `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
-      }
-      return `https://www.2embed.cc/embed/${id}`;
-    },
-  },
-];
-
+// ---- TMDB types ----
 export interface TMDBItem {
   id: number;
   title?: string;
@@ -135,6 +100,58 @@ async function tmdbFetch<T>(endpoint: string, params: Record<string, string> = {
   return res.json();
 }
 
+// ---- VOD API (for actual video streams) ----
+export interface VodItem {
+  vod_id: number;
+  vod_name: string;
+  vod_pic: string;
+  vod_remarks: string;
+  vod_play_url: string;
+  vod_play_from: string;
+  vod_content: string;
+  type_name: string;
+}
+
+export interface PlaySource {
+  name: string;
+  urls: { label: string; url: string }[];
+}
+
+interface VodResponse {
+  code: number;
+  list: VodItem[];
+  total: number;
+  pagecount: number;
+}
+
+export async function searchVod(keyword: string): Promise<VodItem[]> {
+  try {
+    const url = `${VOD_API}?ac=detail&wd=${encodeURIComponent(keyword)}`;
+    const res = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+    if (!res.ok) throw new Error('VOD API error');
+    const data: VodResponse = await res.json();
+    return data.list || [];
+  } catch (e) {
+    console.error('VOD search error:', e);
+    return [];
+  }
+}
+
+export function parsePlayUrls(playUrl: string, playFrom: string): PlaySource[] {
+  const sources = playFrom.split('$$$');
+  const urlGroups = playUrl.split('$$$');
+
+  return sources.map((sourceName, i) => {
+    const urlStr = urlGroups[i] || '';
+    const episodes = urlStr.split('#').filter(Boolean).map((ep) => {
+      const parts = ep.split('$');
+      return { label: parts[0] || '播放', url: parts[1] || '' };
+    });
+    return { name: sourceName, urls: episodes };
+  }).filter(s => s.urls.length > 0 && s.urls.some(u => u.url.includes('.m3u8')));
+}
+
+// ---- TMDB public API ----
 export const tmdb = {
   trending: (page = 1) =>
     tmdbFetch<TMDBResponse<TMDBItem>>('/trending/all/week', { page: String(page) }),
