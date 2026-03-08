@@ -145,6 +145,10 @@ export function buildVodQueryCandidates(title: string, year?: string) {
   return Array.from(new Set(candidates.filter(Boolean)));
 }
 
+export function buildStreamProxyUrl(rawUrl: string) {
+  return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vod-stream?url=${encodeURIComponent(rawUrl)}`;
+}
+
 export function parsePlayUrls(playUrl: string, playFrom: string): PlaySource[] {
   const sources = playFrom.split('$$$');
   const urlGroups = playUrl.split('$$$');
@@ -157,9 +161,10 @@ export function parsePlayUrls(playUrl: string, playFrom: string): PlaySource[] {
         .filter(Boolean)
         .map((ep) => {
           const parts = ep.split('$');
-          return { label: parts[0] || '播放', url: parts[1] || '' };
+          const raw = parts[1] || '';
+          return { label: parts[0] || '播放', url: raw.includes('.m3u8') ? buildStreamProxyUrl(raw) : raw };
         })
-        .filter((e) => e.url.includes('.m3u8'));
+        .filter((e) => e.url);
       return { name: sourceName, urls: episodes };
     })
     .filter((s) => s.urls.length > 0);
