@@ -142,6 +142,7 @@ export default function DetailPage() {
     setPlaying(true);
     setAutoPlaySignal((n) => n + 1);
     setForceIframe(false);
+    setPlayNotice('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (!currentUrl && !vodLoading) {
       searchPlayableSources();
@@ -153,6 +154,7 @@ export default function DetailPage() {
     setActiveEp(epIdx);
     setCurrentUrl(vodSources[sourceIdx]?.urls[epIdx]?.url || '');
     setForceIframe(false);
+    setPlayNotice('');
     setAutoPlaySignal((n) => n + 1);
   };
 
