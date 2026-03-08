@@ -60,6 +60,7 @@ export default function DetailPage() {
     setVodError('');
     setSelectedSeason(1);
     setForceIframe(false);
+    setPlayNotice('');
 
     if (mediaType === 'movie') {
       Promise.all([tmdb.movieDetail(mediaId), tmdb.movieSimilar(mediaId)])
